@@ -1,0 +1,8 @@
+{
+  "name": "ourday-sql-tests",
+  "private": true,
+  "type": "module",
+  "description": "Runs the Supabase migrations and SQL security tests against an in-memory Postgres (PGlite). No database or keys needed.",
+  "scripts": { "test": "node run.mjs" },
+  "devDependencies": { "@electric-sql/pglite": "^0.3.0" }
+}
