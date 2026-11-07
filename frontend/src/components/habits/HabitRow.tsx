@@ -5,6 +5,7 @@ import { habitScope, isShared, scheduleLabel, streakOf } from '../../services/ha
 import type { Habit } from '../../types'
 import { NotifyBell } from '../tasks/NotifyBell'
 import { Avatar } from '../ui/Avatar'
+import { AuroraCard } from '../ui/AuroraCard'
 import { CheckButton } from '../ui/CheckButton'
 import { cn } from '../ui/cn'
 import { ScopeBadge } from './HabitCard'
@@ -18,7 +19,7 @@ export function HabitRow({ habit }: { habit: Habit }) {
   const partnerEntry = habit.log[partner.id]?.[today]
 
   return (
-    <div className={cn('lift flex items-center gap-3 rounded-tile border border-line/10 bg-card/70 p-3.5 shadow-card', done && 'bg-card/40 opacity-70')}>
+    <AuroraCard variant="habit" completed={done} className="flex items-center gap-3 p-3.5 sm:p-4">
       <CheckButton size="sm" checked={done} onToggle={() => toggleHabit(habit.id)} label={`${done ? 'Undo' : 'Mark done'}: ${habit.title}`} />
       <div className="min-w-0 flex-1">
         <p className={cn('flex items-center gap-2 text-sm font-medium', done && 'text-muted line-through decoration-muted/60')}>
@@ -42,7 +43,7 @@ export function HabitRow({ habit }: { habit: Habit }) {
           {streak}
         </span>
       )}
-    </div>
+    </AuroraCard>
   )
 }
 
@@ -52,13 +53,13 @@ export function PartnerHabitRow({ habit }: { habit: Habit }) {
   const entry = habit.log[partner.id]?.[today]
   const done = entry?.status === 'done'
   return (
-    <div className="flex items-center gap-3 rounded-tile border border-line/10 bg-card/50 p-3.5">
+    <AuroraCard variant="info" className="aurora-static flex items-center gap-3 p-3.5">
       <Avatar user={partner} size="sm" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{habit.title}</p>
         <p className="text-xs text-muted">{scheduleLabel(habit)}</p>
       </div>
       <span className={cn('text-xs font-semibold', done ? 'text-partner' : 'text-muted')}>{done ? `Done ${formatTime(entry.at!)}` : 'Not yet'}</span>
-    </div>
+    </AuroraCard>
   )
 }

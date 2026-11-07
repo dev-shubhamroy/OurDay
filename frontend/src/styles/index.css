@@ -39,6 +39,10 @@
   --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 4px 10px -2px rgb(0 0 0 / 0.35), 0 18px 36px -14px rgb(0 0 0 / 0.65);
   --shadow-glow: 0 0 0 1px rgb(39 200 255 / 0.28), 0 8px 26px -8px rgb(39 200 255 / 0.5);
   --shadow-float: 0 24px 60px -20px rgb(0 0 0 / 0.75);
+  /* Aurora cards: dark theme gets the more visible glow. */
+  --glow-k: 1;
+  --wash-k: 1;
+  --glow-size: 30px;
 }
 
 [data-theme='light'] {
@@ -69,6 +73,10 @@
   --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 4px 10px -2px rgb(30 60 110 / 0.12), 0 18px 36px -16px rgb(30 70 130 / 0.32);
   --shadow-glow: 0 0 0 1px rgb(22 141 206 / 0.28), 0 8px 24px -8px rgb(22 141 206 / 0.45);
   --shadow-float: 0 24px 50px -20px rgb(30 70 130 / 0.38);
+  /* Light theme: softer, wider, more restrained glow. */
+  --glow-k: 0.5;
+  --wash-k: 0.75;
+  --glow-size: 44px;
 }
 
 @layer base {
@@ -159,6 +167,169 @@
     inset: -0.5rem;
   }
 }
+
+
+/*
+ * Aurora Cards. One primitive (`.aurora`) plus contextual variants.
+ * Each variant sets --aura (the card's light colour) and strengths; geometry stays 20px (lg) / 14px (sm).
+ * Glow is reserved for importance: critical/approaching deadlines glow most; ordinary tasks only on hover.
+ */
+/* (Plain CSS, not @layer components: variant class names are built dynamically, so Tailwind must not tree-shake them.) */
+  .aurora {
+    --aura: var(--accent);
+    --aura-line: 0.14; /* border alpha */
+    --aura-glow: 0; /* outer glow alpha (x --glow-k) */
+    --aura-wash: 0; /* inner gradient alpha (x --wash-k) */
+    position: relative;
+    border: 1px solid rgb(var(--aura) / var(--aura-line));
+    border-radius: 14px;
+    background:
+      linear-gradient(135deg, rgb(var(--aura) / calc(var(--aura-wash) * var(--wash-k))) 0%, transparent 58%),
+      rgb(var(--surface));
+    box-shadow: var(--shadow-card), 0 0 var(--glow-size) -8px rgb(var(--aura) / calc(var(--aura-glow) * var(--glow-k)));
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease,
+      border-color 0.18s ease,
+      opacity 0.25s ease,
+      background-color 0.18s ease;
+  }
+  .aurora-lg {
+    border-radius: 20px;
+  }
+  /* Hover (pointer devices only): lift and lean into the colour. */
+  @media (hover: hover) {
+    .aurora:hover {
+      transform: translateY(-2px);
+      border-color: rgb(var(--aura) / calc(var(--aura-line) + 0.14));
+      box-shadow: var(--shadow-lift), 0 0 var(--glow-size) -6px rgb(var(--aura) / calc((var(--aura-glow) + 0.14) * var(--glow-k)));
+    }
+  }
+  /* Pressed. */
+  .aurora:active {
+    transform: scale(0.985);
+    transition-duration: 0.1s;
+  }
+  .aurora:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-card), 0 0 0 2px rgb(var(--bg)), 0 0 0 4px rgb(var(--aura) / 0.8);
+  }
+  /* Selected / expanded. */
+  .aurora[aria-expanded='true'],
+  .aurora[aria-pressed='true'],
+  .aurora[data-selected='true'] {
+    border-color: rgb(var(--aura) / 0.55);
+    box-shadow: var(--shadow-lift), 0 0 var(--glow-size) -4px rgb(var(--aura) / calc(0.34 * var(--glow-k)));
+  }
+  /* Completed: calm, green, no glow, still readable. */
+  .aurora[data-completed='true'] {
+    --aura: var(--ok);
+    --aura-line: 0.14;
+    --aura-glow: 0;
+    --aura-wash: 0.04;
+    opacity: 0.74;
+  }
+  .aurora[aria-disabled='true'],
+  .aurora:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* Deadline: strongest hierarchy; colour follows urgency. */
+  .aurora-deadline {
+    border-radius: 20px;
+  }
+  .aurora-deadline::before {
+    /* coloured edge illumination */
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    bottom: 14px;
+    width: 4px;
+    border-radius: 0 4px 4px 0;
+    background: rgb(var(--aura));
+    box-shadow: 0 0 calc(14px * var(--glow-k) + 4px) 1px rgb(var(--aura) / calc(0.75 * var(--glow-k) + 0.1));
+  }
+  .aurora-deadline[data-tone='critical'] {
+    --aura: var(--danger);
+    --aura-line: 0.5;
+    --aura-glow: 0.6;
+    --aura-wash: 0.16;
+  }
+  .aurora-deadline[data-tone='approaching'] {
+    --aura: var(--warn);
+    --aura-line: 0.38;
+    --aura-glow: 0.34;
+    --aura-wash: 0.11;
+  }
+  .aurora-deadline[data-tone='normal'] {
+    --aura: var(--accent);
+    --aura-line: 0.24;
+    --aura-glow: 0.16;
+    --aura-wash: 0.07;
+  }
+  .aurora-deadline[data-tone='done'] {
+    --aura: var(--ok);
+  }
+
+  /* Daily task: solid and focused; cyan only on interaction. */
+  .aurora-task {
+    --aura: var(--accent);
+    --aura-line: 0.12;
+    background: rgb(var(--surface));
+  }
+
+  /* Habit: atmospheric cyan + violet light from opposite corners. */
+  .aurora-habit {
+    --aura: var(--accent);
+    --aura-line: 0.22;
+    --aura-glow: 0.16;
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgb(var(--accent) / calc(0.14 * var(--wash-k))), transparent 60%),
+      radial-gradient(110% 90% at 0% 100%, rgb(var(--accent-2) / calc(0.14 * var(--wash-k))), transparent 62%),
+      rgb(var(--surface));
+    box-shadow:
+      var(--shadow-card),
+      0 0 var(--glow-size) -10px rgb(var(--accent) / calc(0.3 * var(--glow-k))),
+      0 0 var(--glow-size) -12px rgb(var(--accent-2) / calc(0.3 * var(--glow-k)));
+  }
+  .aurora-habit[data-completed='true'] {
+    background: rgb(var(--surface));
+  }
+
+  /* Together: cyan = you, violet = partner. */
+  .aurora-together {
+    --aura: var(--accent);
+    --aura-line: 0.22;
+    --aura-glow: 0.12;
+    --aura-wash: 0.1;
+  }
+  .aurora-together[data-who='partner'] {
+    --aura: var(--accent-2);
+  }
+
+  /* RANA: small translucent cyan/violet information panel. */
+  .aurora-rana {
+    --aura: var(--accent);
+    --aura-line: 0.3;
+    --aura-glow: 0.28;
+    background:
+      linear-gradient(135deg, rgb(var(--accent) / calc(0.14 * var(--wash-k))), rgb(var(--accent-2) / calc(0.14 * var(--wash-k)))),
+      rgb(var(--glass) / 0.82);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  /* Secondary information: neutral, quiet, no glow. */
+  .aurora-info {
+    --aura: var(--line);
+    --aura-line: 0.1;
+    background: rgb(var(--elevated) / 0.55);
+  }
+  .aurora-info.aurora-static:hover {
+    transform: none;
+  }
 
 /* Ambient, static cyan (upper-right) and violet (lower-left) illumination. No motion. */
 .app-backdrop {

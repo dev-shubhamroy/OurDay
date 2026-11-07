@@ -42,6 +42,14 @@
 - **Surfaces:** radii: main surfaces 20px (`rounded-card`), tiles/rows 16px (`rounded-tile`), controls 14px (`rounded-ctl`), inputs 12px. 1px low-contrast borders and layered soft shadows (`shadow-card`, `shadow-lift`, `shadow-float`). Most task/habit cards are solid; glass is used only for the sidebar, top bar, floating RANA panel and modals.
 - **Controls:** shared `Button` (primary / soft = secondary / ghost = quiet), `IconButton`, `Segmented` (tabs), `Switch`, `CheckButton`, form fields, badges. Touch targets are at least 44px (small visual controls such as check circles and switches get a 44px hit area). Known exception: habit calendar day cells are about 41px on 375px screens to fit seven columns. Focus rings, disabled states and press feedback are consistent.
 - **Motion:** page fade (200ms), card hover elevation (pointer devices), completion pop, Together expand/collapse, gentle RANA float; most transitions 150–300ms; nothing loops except RANA's idle float; `prefers-reduced-motion` disables animation.
+- **Aurora Cards** (one primitive, `components/ui/AuroraCard.tsx`, styled by `.aurora*` in `styles/index.css`; each variant sets `--aura`, the card's light colour). Geometry: 20px radius for primary surfaces (deadline and habit cards), 14px for small cards/rows; padding about 20px (large) or 14–16px (small). Glow is reserved for importance and is stronger in dark than light (light = softer, wider, more restrained; amber/red washes stay clean on white).
+  - **Deadline:** edge illumination bar plus tinted wash and glow by urgency: critical (red, strongest glow), approaching (amber), normal (restrained cyan), completed (green, no glow). Larger bold title and clear countdown; on mobile the badge/bell/avatar row sits under the metadata so titles stay readable.
+  - **Daily task:** solid surface, cyan hairline, no resting glow (cyan appears only on hover/focus); completed = green, muted, struck through with completion time.
+  - **Habit:** cyan + violet atmospheric corner light and soft dual glow; per-participant "Done today / Pending" chips, independent streaks per person.
+  - **Together:** cyan = you, violet = partner; expanding a card selects it (stronger border and glow).
+  - **RANA:** small translucent cyan/violet information panel (companion bubble and briefing speech panel); never a permanent large panel.
+  - **Info (secondary):** neutral, quiet, no glow (Daily progress, list rows).
+  - **States:** default, hover (lift, 180ms, pointer devices only), pressed (100ms), focus-visible ring, selected/expanded (`aria-expanded`/`aria-pressed`), completed (`data-completed`), urgent (deadline tone), disabled (`aria-disabled`). All state styling is CSS-only; nothing depends on hover.
 - Lucide icons only. Warmth comes from the violet partner accent and soft geometry.
 - No space/planet imagery, no heavy neon, no chat UI.
 - Responsive: persistent sidebar on desktop, slide-over drawer on mobile.

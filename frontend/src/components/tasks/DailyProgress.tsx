@@ -1,5 +1,6 @@
 import { useApp } from '../../hooks/useApp'
 import { habitProgress, taskProgress, type Progress } from '../../services/selectors'
+import { AuroraCard } from '../ui/AuroraCard'
 import { cn } from '../ui/cn'
 
 function Meter({ label, p, className }: { label: string; p: Progress; className?: string }) {
@@ -24,7 +25,7 @@ export function DailyProgressCard({ className }: { className?: string }) {
   const t = taskProgress(tasks, now)
   const h = habitProgress(habits, now, me.id)
   return (
-    <div className={cn('rounded-2xl border border-line/10 bg-card/40 p-3.5', className)}>
+    <AuroraCard variant="info" className={cn('aurora-static p-3.5', className)}>
       <p className="mb-2.5 flex items-baseline justify-between">
         <span className="eyebrow">Daily progress</span>
         <span className="text-[11px] tabular-nums text-muted">{t.pct}%</span>
@@ -36,6 +37,6 @@ export function DailyProgressCard({ className }: { className?: string }) {
       <span className="sr-only" aria-live="polite">
         {t.done} of {t.total} tasks completed
       </span>
-    </div>
+    </AuroraCard>
   )
 }

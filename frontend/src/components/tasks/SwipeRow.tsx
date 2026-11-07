@@ -4,7 +4,7 @@ import { Check } from 'lucide-react'
 const THRESHOLD = 88
 
 /** Swipe right to complete on touch devices. Mouse/pen input is ignored (use the check button). */
-export function SwipeRow({ onComplete, disabled, children }: { onComplete: () => void; disabled?: boolean; children: ReactNode }) {
+export function SwipeRow({ onComplete, disabled, radius = 'rounded-tile', children }: { onComplete: () => void; disabled?: boolean; radius?: string; children: ReactNode }) {
   const [dx, setDx] = useState(0)
   const start = useRef<{ x: number; y: number; locked: boolean } | null>(null)
 
@@ -32,9 +32,9 @@ export function SwipeRow({ onComplete, disabled, children }: { onComplete: () =>
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl">
+    <div className={`relative ${radius} ${dx > 0 ? 'overflow-hidden' : ''}`}>
       <div
-        className="absolute inset-0 flex items-center rounded-2xl bg-ok/20 pl-5 text-ok"
+        className={`absolute inset-0 flex items-center ${radius} bg-ok/20 pl-5 text-ok`}
         style={{ opacity: Math.min(1, dx / THRESHOLD) }}
         aria-hidden="true"
       >

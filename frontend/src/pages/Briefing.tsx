@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Bell, CircleDot, Flag, ListChecks, Repeat } from 'lucide-react'
 import { RanaRobot } from '../components/rana/RanaRobot'
 import { UrgencyBadge } from '../components/tasks/UrgencyBadge'
+import { AuroraCard } from '../components/ui/AuroraCard'
 import { Button } from '../components/ui/Button'
 import { useApp } from '../hooks/useApp'
 import { formatDeadline, formatLongDate, formatClock, formatRemaining } from '../services/dates'
@@ -28,7 +29,7 @@ export default function Briefing() {
         <section className="flex flex-col items-center text-center lg:items-start lg:text-left">
           <p className="eyebrow mb-4">{formatLongDate(now)} · Daily briefing</p>
           <RanaRobot mood="greet" className="h-52 w-52 sm:h-64 sm:w-64" />
-          <div className="glass relative mt-4 w-full rounded-card p-5 shadow-float lg:mt-6">
+          <AuroraCard variant="rana" large className="mt-4 w-full p-5 lg:mt-6">
             <p className="eyebrow mb-2 text-accent">RANA</p>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl animate-rise">{b.greeting}</h1>
             <div className="mt-3 space-y-2 text-[15px] leading-relaxed text-fg/90">
@@ -38,7 +39,7 @@ export default function Briefing() {
                 </p>
               ))}
             </div>
-          </div>
+          </AuroraCard>
           <Button size="lg" onClick={start} className="mt-6 w-full sm:w-auto">
             Let’s get started <ArrowRight className="h-5 w-5" />
           </Button>

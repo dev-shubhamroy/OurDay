@@ -5,6 +5,7 @@ import { formatTime } from '../../services/dates'
 import { personDay, type DayItem } from '../../services/selectors'
 import type { User } from '../../types'
 import { Avatar } from '../ui/Avatar'
+import { AuroraCard } from '../ui/AuroraCard'
 import { cn } from '../ui/cn'
 
 const KIND_LABEL = { daily: 'Daily task', deadline: 'Deadline', habit: 'Habit' } as const
@@ -56,12 +57,15 @@ function PersonCard({ user }: { user: User }) {
 
   return (
     <div>
-      <button
+      <AuroraCard
+        as="button"
+        variant="together"
+        who={user.tone}
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className={cn('tile lift min-h-11 w-full p-3 text-left active:scale-[0.99]', open && 'border-accent/30')}
+        className="min-h-11 w-full p-3.5 text-left"
       >
         <span className="flex items-center gap-3">
           <Avatar user={user} size="sm" />
@@ -76,7 +80,7 @@ function PersonCard({ user }: { user: User }) {
         <span className="mt-2.5 block h-1 overflow-hidden rounded-full bg-line/15">
           <span className={cn('block h-full rounded-full transition-all duration-700', user.tone === 'you' ? 'bg-accent/80' : 'bg-accent2/80')} style={{ width: `${pct}%` }} />
         </span>
-      </button>
+      </AuroraCard>
 
       <div id={panelId} className={cn('grid transition-[grid-template-rows,opacity] duration-300 ease-out', open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')} aria-hidden={!open}>
         <div className="min-h-0 overflow-hidden">

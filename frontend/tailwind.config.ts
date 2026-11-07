@@ -35,9 +35,9 @@ export default {
         display: ['"Manrope Variable"', '"Inter Variable"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
-        /** Main surfaces 20px, tiles/rows 16px, controls 14px, small 12px. */
+        /** Main surfaces 20px, small cards/rows 14px, controls 14px, inputs 12px. */
         card: '20px',
-        tile: '16px',
+        tile: '14px',
         ctl: '14px',
       },
       boxShadow: {

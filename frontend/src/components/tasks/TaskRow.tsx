@@ -2,6 +2,7 @@ import { CalendarCheck, Flag, Repeat } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { TaskType, User } from '../../types'
 import { Avatar } from '../ui/Avatar'
+import { AuroraCard } from '../ui/AuroraCard'
 import { cn } from '../ui/cn'
 import { NotifyBell } from './NotifyBell'
 
@@ -11,7 +12,7 @@ const ICONS = { daily: CalendarCheck, deadline: Flag, habit: Repeat }
 export function TaskRow({ kind, title, meta, owner, bell, right, muted, struck }: { kind: TaskType; title: string; meta?: ReactNode; owner?: User; bell?: boolean; right?: ReactNode; muted?: boolean; struck?: boolean }) {
   const Icon = ICONS[kind]
   return (
-    <div className={cn('flex items-center gap-3.5 rounded-2xl border border-line/10 bg-card/60 p-3.5 shadow-card', muted && 'opacity-75')}>
+    <AuroraCard variant="info" className={cn('aurora-static flex items-center gap-3.5 p-3.5', muted && 'opacity-80')}>
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
         <Icon className="h-4 w-4" />
       </span>
@@ -22,7 +23,7 @@ export function TaskRow({ kind, title, meta, owner, bell, right, muted, struck }
       {bell && <NotifyBell />}
       {right}
       {owner && <Avatar user={owner} size="xs" />}
-    </div>
+    </AuroraCard>
   )
 }
 

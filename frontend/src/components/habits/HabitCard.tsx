@@ -1,9 +1,10 @@
 import { Flame, Pause, Play, Trophy } from 'lucide-react'
 import { useApp } from '../../hooks/useApp'
-import { habitScope, longestStreak, scheduleLabel, streakOf, weeklyRate } from '../../services/habits'
+import { dayState, habitScope, longestStreak, scheduleLabel, streakOf, weeklyRate } from '../../services/habits'
 import type { Habit, HabitScope } from '../../types'
 import { NotifyBell } from '../tasks/NotifyBell'
 import { Avatar } from '../ui/Avatar'
+import { AuroraCard } from '../ui/AuroraCard'
 import { Button } from '../ui/Button'
 import { CheckButton } from '../ui/CheckButton'
 import { cn } from '../ui/cn'
@@ -33,7 +34,7 @@ export function HabitCard({ habit }: { habit: Habit }) {
   const people = [...habit.participants].sort((a) => (a === me.id ? -1 : 1))
 
   return (
-    <article className={cn('panel lift flex flex-col gap-4 p-4 sm:gap-5 sm:p-5', habit.paused && 'opacity-60')}>
+    <AuroraCard variant="habit" as="article" large className={cn('flex flex-col gap-4 p-4 sm:gap-5 sm:p-5', habit.paused && 'opacity-60')}>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="flex items-center gap-2 text-lg font-semibold">
@@ -50,6 +51,30 @@ export function HabitCard({ habit }: { habit: Habit }) {
           <CheckButton checked={myDone} onToggle={() => toggleHabit(habit.id)} label={`${myDone ? 'Undo' : 'Mark done today'}: ${habit.title}`} />
         )}
       </div>
+
+      {/* Today's completion, shown separately for each participant. */}
+      {!habit.paused && people.some((u) => dayState(habit, u, today, today) !== 'off') && (
+        <ul className="flex flex-wrap gap-2" aria-label="Today's completion">
+          {people.map((u) => {
+            const st = dayState(habit, u, today, today)
+            const user = userById(u)
+            return (
+              <li
+                key={u}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full border py-0.5 pl-0.5 pr-2.5 text-[11px] font-semibold',
+                  st === 'done' ? 'border-ok/30 bg-ok/10 text-ok' : 'border-line/15 bg-line/5 text-muted',
+                )}
+              >
+                <Avatar user={user} size="xs" className="ring-0" />
+                {u === me.id ? 'You' : user.name}
+                <span aria-hidden="true">·</span>
+                {st === 'done' ? 'Done today' : st === 'off' ? 'Not scheduled' : 'Pending'}
+              </li>
+            )
+          })}
+        </ul>
+      )}
 
       {/* Independent streaks per person */}
       <div className={cn('grid gap-2.5', people.length > 1 ? 'grid-cols-2' : '')}>
@@ -91,6 +116,6 @@ export function HabitCard({ habit }: { habit: Habit }) {
       <Button variant="ghost" size="sm" className="mt-auto self-start" icon={habit.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} onClick={() => setHabitPaused(habit.id, !habit.paused)}>
         {habit.paused ? 'Resume habit' : 'Pause habit'}
       </Button>
-    </article>
+    </AuroraCard>
   )
 }

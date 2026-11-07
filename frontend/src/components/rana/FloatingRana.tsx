@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Sunrise } from 'lucide-react'
 import { useApp } from '../../hooks/useApp'
 import { ranaAck, ranaStatus } from '../../services/rana'
+import { AuroraCard } from '../ui/AuroraCard'
 import { RanaRobot, type RanaMood } from './RanaRobot'
 
 /** Small floating companion. Deterministic status + restrained acknowledgement — not a chatbot. */
@@ -53,7 +54,7 @@ export function FloatingRana() {
   return (
     <div className="pointer-events-none fixed bottom-4 right-3 z-30 flex flex-col items-end gap-2 sm:bottom-6 sm:right-6">
       {showBubble && (
-        <div className="glass pointer-events-auto max-w-[260px] animate-rise rounded-2xl rounded-br-md p-4 shadow-float" role="status">
+        <AuroraCard variant="rana" large className="pointer-events-auto max-w-[260px] animate-rise !rounded-br-md p-4" role="status">
           <p className="eyebrow mb-1 text-accent">RANA</p>
           <p className="text-sm leading-relaxed">{message}</p>
           {open && !ack && (
@@ -67,7 +68,7 @@ export function FloatingRana() {
               <Sunrise className="h-3.5 w-3.5" /> Replay today’s briefing
             </button>
           )}
-        </div>
+        </AuroraCard>
       )}
       <button
         onClick={() => setOpen((v) => !v)}
