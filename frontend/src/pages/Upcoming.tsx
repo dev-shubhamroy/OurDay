@@ -3,12 +3,14 @@ import { Chip, TaskRow } from '../components/tasks/TaskRow'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
+import { useViewData } from '../hooks/useView'
 import { formatClock, formatDayLabel, formatDeadline } from '../services/dates'
 import { upcomingTasks } from '../services/selectors'
 import type { Task } from '../types'
 
 export default function Upcoming() {
-  const { tasks, now, today, userById } = useApp()
+  const { now, today, userById } = useApp()
+  const { tasks } = useViewData()
   const groups = new Map<string, Task[]>()
   upcomingTasks(tasks, now).forEach((t) => groups.set(t.date, [...(groups.get(t.date) ?? []), t]))
 

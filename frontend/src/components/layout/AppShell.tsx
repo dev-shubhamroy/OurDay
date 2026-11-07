@@ -11,6 +11,9 @@ import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
 import { FloatingRana } from '../rana/FloatingRana'
 import { Sidebar } from './Sidebar'
+import { ViewBanner } from './ViewBanner'
+import { ViewModeToggle } from './ViewModeToggle'
+import { useView } from '../../hooks/useView'
 
 export function AppShell() {
   const [drawer, setDrawer] = useState(false)
@@ -19,6 +22,7 @@ export function AppShell() {
   const [addOpen, setAddOpen] = useState(false)
   const [editing, setEditing] = useState<EditTarget | null>(null)
   const { sync } = useApp()
+  const { mode } = useView()
   const [dismissedError, setDismissedError] = useState(0)
   const errId = sync.actionError?.id ?? 0
   useEffect(() => {
@@ -65,7 +69,7 @@ export function AppShell() {
           </IconButton>
           <div className="flex items-center gap-2 lg:hidden">
             <BrandMark className="h-8 w-8" />
-            <span className="font-display hidden text-lg font-bold tracking-tight min-[360px]:inline">OurDay</span>
+            <span className="font-display hidden text-lg font-bold tracking-tight min-[430px]:inline">OurDay</span>
           </div>
           <div className="ml-auto flex items-center gap-2" id="topbar-actions">
             {sync.remote && sync.state === 'offline' && (
@@ -73,6 +77,7 @@ export function AppShell() {
                 <WifiOff className="h-3.5 w-3.5" /> Offline
               </span>
             )}
+            <ViewModeToggle />
             <Button onClick={() => setAddOpen(true)} icon={<Plus className="h-[18px] w-[18px]" />} className="px-3.5 sm:px-5">
               <span className="hidden sm:inline">Add Task</span>
               <span className="sm:hidden">Add</span>
@@ -82,7 +87,8 @@ export function AppShell() {
             </IconButton>
           </div>
         </header>
-        <main key={pathname} className="mx-auto w-full max-w-[1200px] animate-fade px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pt-10">
+        <main key={`${pathname}:${mode}`} className="mx-auto w-full max-w-[1200px] animate-fade px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pt-10">
+          <ViewBanner />
           <Outlet />
         </main>
       </div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { A, B, NOW, TODAY, day, daily, deadline, done, habit } from '../test/fixtures'
-import { comingUpTasks, isExpired, openDeadlinesOn, pastDeadlines, personDay, taskProgress, todayDeadlines } from './selectors'
+import { dayState, streakOf } from './habits'
+import { comingUpTasks, habitProgress, habitsOf, isExpired, openDeadlinesOn, pastDeadlines, personDay, taskProgress, tasksOwnedBy, todayDeadlines } from './selectors'
 import { urgencyOf } from './urgency'
 
 describe('deadline grouping', () => {
@@ -106,5 +107,58 @@ describe('per-person progress (Together cards)', () => {
     const p = taskProgress(tasks, NOW)
     expect(p.total).toBe(3)
     expect(p.done).toBe(1)
+  })
+})
+
+describe('viewing mode filters (Partner Mode)', () => {
+  const tasks = [
+    deadline('a1', 'A deadline', 0, '18:00', { createdBy: A }),
+    deadline('b1', 'B deadline', 0, '19:00', { createdBy: B }),
+    daily('a2', 'A task', 0, { createdBy: A }),
+    daily('b2', 'B task', 1, { createdBy: B, notifySecondUser: true }),
+  ]
+  const habits = [
+    habit({ id: 'mine', participants: [A] }),
+    habit({ id: 'theirs', participants: [B] }),
+    habit({ id: 'shared', participants: [A, B], log: { [A]: done(0) } }),
+  ]
+
+  it('tasks belong to their creator, regardless of the notify flag', () => {
+    expect(tasksOwnedBy(tasks, A).map((t) => t.id)).toEqual(['a1', 'a2'])
+    expect(tasksOwnedBy(tasks, B).map((t) => t.id)).toEqual(['b1', 'b2'])
+  })
+
+  it("each person's deadline groups only contain their own deadlines", () => {
+    expect(openDeadlinesOn(tasksOwnedBy(tasks, B), NOW, TODAY).map((t) => t.id)).toEqual(['b1'])
+    expect(openDeadlinesOn(tasksOwnedBy(tasks, A), NOW, TODAY).map((t) => t.id)).toEqual(['a1'])
+  })
+
+  it("upcoming/coming-up follows the viewed person", () => {
+    expect(comingUpTasks(tasksOwnedBy(tasks, B), NOW).map((t) => t.id)).toEqual(['b1', 'b2'])
+  })
+
+  it('habits include personal ones plus shared, never the other person\'s personal habits', () => {
+    expect(habitsOf(habits, A).map((h) => h.id)).toEqual(['mine', 'shared'])
+    expect(habitsOf(habits, B).map((h) => h.id)).toEqual(['theirs', 'shared'])
+  })
+
+  it("a shared habit shows the viewed person's own status, not mine", () => {
+    const shared = habits[2]
+    expect(dayState(shared, A, TODAY, TODAY)).toBe('done')
+    expect(dayState(shared, B, TODAY, TODAY)).toBe('pending')
+    expect(streakOf(shared, B, TODAY)).toBe(0)
+  })
+
+  it("daily progress is for the selected person only", () => {
+    expect(habitProgress(habitsOf(habits, A), NOW, A)).toMatchObject({ done: 1, total: 2 })
+    expect(habitProgress(habitsOf(habits, B), NOW, B)).toMatchObject({ done: 0, total: 2 })
+    expect(taskProgress(tasksOwnedBy(tasks, B), NOW).total).toBe(1)
+  })
+
+  it('filtering is a pure view: the shared data is not modified', () => {
+    const before = JSON.stringify(tasks) + JSON.stringify(habits)
+    tasksOwnedBy(tasks, B)
+    habitsOf(habits, B)
+    expect(JSON.stringify(tasks) + JSON.stringify(habits)).toBe(before)
   })
 })

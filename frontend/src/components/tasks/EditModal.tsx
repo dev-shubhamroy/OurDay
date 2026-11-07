@@ -2,6 +2,7 @@ import { Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useApp } from '../../hooks/useApp'
 import { atTime, toKey } from '../../services/dates'
+import { canManageHabit } from '../../services/habits'
 import { dayName } from '../../services/habits'
 import type { Habit, Task } from '../../types'
 import type { EditTarget } from '../../store/uiContext'
@@ -167,7 +168,9 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
 export function EditModal({ target, onClose }: { target: EditTarget | null; onClose: () => void }) {
   const { tasks, habits } = useApp()
   const task = target?.type === 'task' ? tasks.find((t) => t.id === target.id) : undefined
-  const habit = target?.type === 'habit' ? habits.find((h) => h.id === target.id) : undefined
+  const { me } = useApp()
+  // A partner's personal habit is read-only, so its editor never opens.
+  const habit = target?.type === 'habit' ? habits.find((h) => h.id === target.id && canManageHabit(h, me.id)) : undefined
   const open = !!(task || habit)
   return (
     <Modal open={open} onClose={onClose} title={task ? 'Edit task' : 'Edit habit'}>

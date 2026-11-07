@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useApp } from '../../hooks/useApp'
+import { useViewData } from '../../hooks/useView'
 import { futureDeadlines, taskProgress, todayDeadlines } from '../../services/selectors'
 import { Avatar } from '../ui/Avatar'
 import { BrandMark } from '../ui/RanaMark'
@@ -7,7 +8,8 @@ import { cn } from '../ui/cn'
 import { NAV_ITEMS } from './nav'
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { tasks, now, users } = useApp()
+  const { now, users } = useApp()
+  const { tasks } = useViewData()
   const p = taskProgress(tasks, now)
   const badges: Record<string, number | undefined> = {
     '/today': p.total - p.done,

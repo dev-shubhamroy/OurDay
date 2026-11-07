@@ -86,3 +86,9 @@ export function scheduleLabel(habit: Habit): string {
   if (days.length === 5 && [1, 2, 3, 4, 5].every((d) => days.includes(d))) return 'Weekdays'
   return [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map(dayName).join(' · ')
 }
+
+/**
+ * Whether the current person may edit/pause/delete a habit in the UI. A partner's PERSONAL habit is read-only
+ * (view only); shared habits and your own personal habits are manageable. Tasks are not affected by this rule.
+ */
+export const canManageHabit = (h: Habit, me: UserId): boolean => h.participants.length > 1 || h.participants[0] === me

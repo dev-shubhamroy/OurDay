@@ -1,5 +1,6 @@
 import { CalendarClock, Flag, PartyPopper } from 'lucide-react'
 import { useApp } from '../../hooks/useApp'
+import { useViewData } from '../../hooks/useView'
 import { addDays } from '../../services/dates'
 import { openDeadlinesOn } from '../../services/selectors'
 import type { Task } from '../../types'
@@ -28,7 +29,8 @@ function Group({ title, tasks, empty, tomorrow }: { title: string; tasks: Task[]
 
 /** Every incomplete deadline due today and tomorrow, each in its own card, earliest first. */
 export function DeadlineGroups() {
-  const { tasks, now, today } = useApp()
+  const { now, today } = useApp()
+  const { tasks } = useViewData()
   return (
     <div className="space-y-6">
       <Group title="Today’s Deadlines" tasks={openDeadlinesOn(tasks, now, today)} empty="No deadlines today. Enjoy the breathing room." />

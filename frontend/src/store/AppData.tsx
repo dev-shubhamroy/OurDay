@@ -6,6 +6,7 @@ import { AuroraCard } from '../components/ui/AuroraCard'
 import { AuthSplash } from '../components/layout/AuthGuards'
 import { AppProvider } from './AppProvider'
 import { RemoteAppProvider } from './RemoteAppProvider'
+import { ViewProvider } from './ViewProvider'
 
 /** First-load gate for real data: splash while loading, retry card if the very first load fails. */
 function LoadGate() {
@@ -24,7 +25,11 @@ function LoadGate() {
       </div>
     )
   }
-  return <Outlet />
+  return (
+    <ViewProvider>
+      <Outlet />
+    </ViewProvider>
+  )
 }
 
 /**
@@ -36,7 +41,9 @@ export function AppData() {
   if (status === 'disabled') {
     return (
       <AppProvider>
-        <Outlet />
+        <ViewProvider>
+          <Outlet />
+        </ViewProvider>
       </AppProvider>
     )
   }

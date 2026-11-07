@@ -1,6 +1,7 @@
 import { Flame, Pause, Play, Trophy } from 'lucide-react'
 import { useApp } from '../../hooks/useApp'
-import { dayState, habitScope, longestStreak, scheduleLabel, streakOf, weeklyRate } from '../../services/habits'
+import { useView } from '../../hooks/useView'
+import { canManageHabit, dayState, habitScope, longestStreak, scheduleLabel, streakOf, weeklyRate } from '../../services/habits'
 import type { Habit, HabitScope } from '../../types'
 import { NotifyBell } from '../tasks/NotifyBell'
 import { Avatar } from '../ui/Avatar'
@@ -29,10 +30,12 @@ export function ScopeBadge({ scope, className }: { scope: HabitScope; className?
 
 export function HabitCard({ habit }: { habit: Habit }) {
   const { today, me, toggleHabit, setHabitPaused, userById } = useApp()
+  const { subject, isPartnerView } = useView()
   const scope = habitScope(habit, me.id)
   const mine = habit.participants.includes(me.id)
   const myDone = habit.log[me.id]?.[today]?.status === 'done'
-  const people = [...habit.participants].sort((a) => (a === me.id ? -1 : 1))
+  // The viewed person's own record always comes first.
+  const people = [...habit.participants].sort((a) => (a === subject.id ? -1 : 1))
 
   return (
     <AuroraCard variant="habit" as="article" large className={cn('flex flex-col gap-4 p-4 sm:gap-5 sm:p-5', habit.paused && 'opacity-60')}>
@@ -48,8 +51,8 @@ export function HabitCard({ habit }: { habit: Habit }) {
             {habit.paused && <span>· Paused</span>}
           </p>
         </div>
-        <EditButton target={{ type: 'habit', id: habit.id }} label={`Edit ${habit.title}`} />
-        {mine && !habit.paused && (
+        {canManageHabit(habit, me.id) && <EditButton target={{ type: 'habit', id: habit.id }} label={`Edit ${habit.title}`} />}
+        {mine && !isPartnerView && !habit.paused && (
           <CheckButton checked={myDone} onToggle={() => toggleHabit(habit.id)} label={`${myDone ? 'Undo' : 'Mark done today'}: ${habit.title}`} />
         )}
       </div>
@@ -84,7 +87,7 @@ export function HabitCard({ habit }: { habit: Habit }) {
           const user = userById(u)
           const current = streakOf(habit, u, today)
           return (
-            <div key={u} className="tile p-3">
+            <div key={u} className={cn('tile p-3', u === subject.id && (isPartnerView ? 'border-accent2/40' : 'border-accent/40'))}>
               <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
                 <Avatar user={user} size="xs" />
                 {u === me.id ? 'You' : user.name}
@@ -115,9 +118,11 @@ export function HabitCard({ habit }: { habit: Habit }) {
 
       <HabitCalendar habit={habit} />
 
-      <Button variant="ghost" size="sm" className="mt-auto self-start" icon={habit.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} onClick={() => setHabitPaused(habit.id, !habit.paused)}>
-        {habit.paused ? 'Resume habit' : 'Pause habit'}
-      </Button>
+      {canManageHabit(habit, me.id) && (
+              <Button variant="ghost" size="sm" className="mt-auto self-start" icon={habit.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} onClick={() => setHabitPaused(habit.id, !habit.paused)}>
+          {habit.paused ? 'Resume habit' : 'Pause habit'}
+        </Button>
+      )}
     </AuroraCard>
   )
 }

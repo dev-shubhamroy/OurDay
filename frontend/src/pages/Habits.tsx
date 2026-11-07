@@ -5,6 +5,7 @@ import { Segmented } from '../components/ui/Controls'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
+import { useViewData } from '../hooks/useView'
 import { habitScope, streakOf } from '../services/habits'
 import { habitProgress } from '../services/selectors'
 import type { HabitScope } from '../types'
@@ -12,11 +13,12 @@ import type { HabitScope } from '../types'
 type Filter = 'all' | HabitScope
 
 export default function Habits() {
-  const { habits, now, today, me } = useApp()
+  const { now, today } = useApp()
+  const { habits, subject } = useViewData()
   const [filter, setFilter] = useState<Filter>('all')
-  const p = habitProgress(habits, now, me.id)
-  const best = Math.max(0, ...habits.filter((h) => h.participants.includes(me.id)).map((h) => streakOf(h, me.id, today)))
-  const shown = habits.filter((h) => filter === 'all' || habitScope(h, me.id) === filter)
+  const p = habitProgress(habits, now, subject.id)
+  const best = Math.max(0, ...habits.map((h) => streakOf(h, subject.id, today)))
+  const shown = habits.filter((h) => filter === 'all' || habitScope(h, subject.id) === filter)
 
   return (
     <>
@@ -35,8 +37,7 @@ export default function Habits() {
           onChange={setFilter}
           options={[
             { value: 'all', label: 'All' },
-            { value: 'personal', label: 'Mine' },
-            { value: 'partner', label: 'Partner’s' },
+            { value: 'personal', label: 'Personal' },
             { value: 'shared', label: 'Shared' },
           ]}
         />

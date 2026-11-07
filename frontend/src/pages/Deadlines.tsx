@@ -7,12 +7,14 @@ import { Segmented } from '../components/ui/Controls'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState, SectionHeader } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
+import { useViewData } from '../hooks/useView'
 import { formatDeadline, formatRemaining } from '../services/dates'
 import { futureDeadlines, pastDeadlines, todayDeadlines } from '../services/selectors'
 import { remainingMs, urgencyOf } from '../services/urgency'
 
 export default function Deadlines() {
-  const { tasks, now, today, userById } = useApp()
+  const { now, today, userById } = useApp()
+  const { tasks } = useViewData()
   const [view, setView] = useState<'active' | 'past'>('active')
   const todays = todayDeadlines(tasks, now)
   const future = futureDeadlines(tasks, now)

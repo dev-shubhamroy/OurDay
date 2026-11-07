@@ -179,3 +179,9 @@ export function personDay(tasks: Task[], habits: Habit[], now: Date, user: UserI
     remaining: items.filter((i) => !i.done),
   }
 }
+
+/** Tasks created by the given person. Viewing filter only: ownership is never changed. */
+export const tasksOwnedBy = (tasks: Task[], userId: UserId): Task[] => tasks.filter((t) => t.createdBy === userId)
+
+/** Habits the given person takes part in (their personal habits plus shared ones). */
+export const habitsOf = (habits: Habit[], userId: UserId): Habit[] => habits.filter((h) => participates(h, userId))

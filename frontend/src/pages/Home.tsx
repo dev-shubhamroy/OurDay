@@ -8,6 +8,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { DailyProgressCard } from '../components/tasks/DailyProgress'
 import { EmptyState, SectionHeader } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
+import { useViewData } from '../hooks/useView'
 import { formatLongDate, formatTime, greetingFor } from '../services/dates'
 import { habitOccurrencesToday, taskProgress, comingUpTasks, todayActivity } from '../services/selectors'
 
@@ -15,11 +16,12 @@ const COMING_UP_MAX = 5
 
 export default function Home() {
   const { tasks, habits, now, today, me, users, userById } = useApp()
+  const view = useViewData()
   const t = taskProgress(tasks, now)
   const occ = habitOccurrencesToday(habits, now)
   const activity = todayActivity(tasks, habits, now)
   // Show everything while it's short; if it grows past COMING_UP_MAX, keep just the next 3 deadlines (rest via "See all").
-  const comingAll = comingUpTasks(tasks, now)
+  const comingAll = comingUpTasks(view.tasks, now)
   const nextDeadlines = comingAll.filter((x) => x.kind === 'deadline').slice(0, 3)
   const ahead = comingAll.length <= COMING_UP_MAX ? comingAll : nextDeadlines.length > 0 ? nextDeadlines : comingAll.slice(0, 3)
   const total = t.total + occ.length

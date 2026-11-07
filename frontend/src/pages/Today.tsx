@@ -1,26 +1,27 @@
 import { CalendarCheck, Flag, ListChecks, PartyPopper, Repeat } from 'lucide-react'
 import { HabitCheckIn } from '../components/habits/HabitCheckIn'
-import { HabitRow, PartnerHabitRow } from '../components/habits/HabitRow'
+import { HabitRow } from '../components/habits/HabitRow'
 import { DailyProgressCard } from '../components/tasks/DailyProgress'
 import { DeadlineCard } from '../components/tasks/DeadlineCard'
 import { TaskCard } from '../components/tasks/TaskCard'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState, SectionHeader } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
+import { useViewData } from '../hooks/useView'
 import { formatLongDate } from '../services/dates'
-import { partnerHabitsToday, todayDaily, todayDeadlines, todayHabits } from '../services/selectors'
+import { todayDaily, todayDeadlines, todayHabits } from '../services/selectors'
 
 export default function Today() {
-  const { tasks, habits, now, me, partner } = useApp()
+  const { now } = useApp()
+  const { tasks, habits, subject, isPartnerView } = useViewData()
   const deadlines = todayDeadlines(tasks, now)
   const daily = todayDaily(tasks, now)
-  const todays = todayHabits(habits, now, me.id)
-  const theirs = partnerHabitsToday(habits, now, partner.id)
+  const todays = todayHabits(habits, now, subject.id)
 
   return (
     <>
       <PageHeader eyebrow={formatLongDate(now)} title="Today" subtitle="Deadlines first, then the rest of your day." />
-      <HabitCheckIn />
+      {!isPartnerView && <HabitCheckIn />}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-8">
           <section aria-label="Today's deadlines" className="animate-rise">
@@ -46,16 +47,6 @@ export default function Today() {
             <div className="space-y-2.5">
               {todays.length === 0 ? <EmptyState icon={<Repeat className="h-6 w-6" />} title="No habits scheduled today" /> : todays.map((h) => <HabitRow key={h.id} habit={h} />)}
             </div>
-            {theirs.length > 0 && (
-              <div className="mt-4">
-                <p className="eyebrow mb-2">{partner.name}’s habits</p>
-                <div className="space-y-2">
-                  {theirs.map((h) => (
-                    <PartnerHabitRow key={h.id} habit={h} />
-                  ))}
-                </div>
-              </div>
-            )}
           </section>
         </aside>
       </div>

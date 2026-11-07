@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../../hooks/useApp'
+import { useView } from '../../hooks/useView'
 import { entryFor, calendarDays, calendarLabel, dayState, isScheduled, type DayState } from '../../services/habits'
 import { formatTime, fromKey } from '../../services/dates'
 import type { DateKey, Habit, UserId } from '../../types'
@@ -47,8 +48,9 @@ export function HabitCalendar({ habit }: { habit: Habit }) {
   const { today, me, userById } = useApp()
   const [selected, setSelected] = useState<DateKey | null>(null)
   const days = calendarDays(today, 5)
-  // Current user first so their half is always on the left.
-  const people: UserId[] = [...habit.participants].sort((a) => (a === me.id ? -1 : 1))
+  // The viewed person first so their half is always on the left (colours still show who is who: green = me, blue = partner).
+  const { subject } = useView()
+  const people: UserId[] = [...habit.participants].sort((a) => (a === subject.id ? -1 : 1))
 
   return (
     <div>

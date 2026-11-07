@@ -1,4 +1,5 @@
 import { useApp } from '../../hooks/useApp'
+import { useViewData } from '../../hooks/useView'
 import { habitProgress, taskProgress, type Progress } from '../../services/selectors'
 import { AuroraCard } from '../ui/AuroraCard'
 import { cn } from '../ui/cn'
@@ -21,9 +22,10 @@ function Meter({ label, p, className }: { label: string; p: Progress; className?
 
 /** Compact, secondary daily progress: a glanceable widget, not a feature. */
 export function DailyProgressCard({ className }: { className?: string }) {
-  const { tasks, habits, now, me } = useApp()
+  const { now } = useApp()
+  const { tasks, habits, subject } = useViewData()
   const t = taskProgress(tasks, now)
-  const h = habitProgress(habits, now, me.id)
+  const h = habitProgress(habits, now, subject.id)
   return (
     <AuroraCard variant="info" className={cn('aurora-static p-3.5', className)}>
       <p className="mb-2.5 flex items-baseline justify-between">
