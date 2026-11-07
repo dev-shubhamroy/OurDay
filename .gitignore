@@ -25,3 +25,7 @@ npm-debug.log*
 *.suo
 *.sw?
 .claude/
+
+# Supabase CLI local link state
+supabase/.temp/
+supabase/.branches/
