@@ -1,4 +1,4 @@
-import type { Habit, Task } from '../types'
+import type { Habit, Task, User } from '../types'
 import { formatRemaining, greetingFor, numberWord } from './dates'
 import { habitProgress, taskProgress, todayDaily, todayDeadlines, todayHabits } from './selectors'
 import { remainingMs, urgencyOf } from './urgency'
@@ -16,10 +16,10 @@ export interface Briefing {
   habits: Habit[]
 }
 
-export function buildBriefing(tasks: Task[], habits: Habit[], now: Date, name: string): Briefing {
+export function buildBriefing(tasks: Task[], habits: Habit[], now: Date, me: User): Briefing {
   const deadlines = todayDeadlines(tasks, now).filter((t) => t.status === 'open')
   const daily = todayDaily(tasks, now).filter((t) => t.status === 'open')
-  const todays = todayHabits(habits, now)
+  const todays = todayHabits(habits, now, me.id)
   const lines: string[] = []
 
   const urgent = deadlines.filter((t) => urgencyOf(t, now) !== 'normal')
@@ -39,13 +39,13 @@ export function buildBriefing(tasks: Task[], habits: Habit[], now: Date, name: s
 
   if (todays.length > 0) lines.push(`And ${numberWord(todays.length)} ${plural(todays.length, 'habit')} to keep your streaks going.`)
 
-  return { greeting: `${greetingFor(now)}, ${name}!`, lines, deadlines, tasks: daily, habits: todays }
+  return { greeting: `${greetingFor(now)}, ${me.name}!`, lines, deadlines, tasks: daily, habits: todays }
 }
 
 /** One-line status for the floating companion. */
-export function ranaStatus(tasks: Task[], habits: Habit[], now: Date): string {
+export function ranaStatus(tasks: Task[], habits: Habit[], now: Date, meId: string): string {
   const t = taskProgress(tasks, now)
-  const h = habitProgress(habits, now)
+  const h = habitProgress(habits, now, meId)
   const open = todayDeadlines(tasks, now).filter((x) => x.status === 'open')
   if (t.total > 0 && t.done === t.total && h.done === h.total) return 'Everything on today’s list is done. Lovely teamwork.'
   if (open.length > 0) {

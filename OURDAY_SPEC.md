@@ -13,7 +13,7 @@
 |---|---|---|
 | Daily Task | Regular task planned for a day | title, planned date, optional time, notes, notify toggle |
 | Deadline Task | Task with a hard due moment | title, deadline date + time, notes, notify toggle |
-| Habit | Recurring practice, one occurrence per scheduled day | name, recurrence (every day / selected weekdays), notes, notify toggle |
+| Habit | Recurring practice, one occurrence per scheduled day, no time of day | name, owner(s), recurrence (every day / selected weekdays), notes |
 
 ## 3. RANA
 - Friendly floating robotic companion: black metallic body, glowing blue expressive eyes, machine-like (never human), subtle float, small eye movements, restrained greeting/acknowledgement animations.
@@ -48,31 +48,67 @@
 - A completed task **stays visible in its original position for the whole day**: green check, struck-through title, completion time, muted look.
 - Daily progress ("3 of 6 tasks completed") updates immediately.
 - At the daily reset, completed items become Completed History. Incomplete daily tasks from earlier days appear under Past / Missed.
-- Habits: a missed occurrence stays recorded as missed; the next scheduled day gets a fresh occurrence.
+- Habits follow their own rules; see section 9.
 
-## 9. Architecture
+## 9. Habits (final decisions)
+### 9.1 Habit types
+1. **Personal** — belongs to one user (the current user).
+2. **Partner's** — belongs to the other user; visible to both.
+3. **Shared** — both users participate.
+
+Both users have full access to every habit (view, pause/resume). Completion, however, is recorded **per participant**: you check off your own occurrence only. A partner's personal habit is completed by its owner. For shared habits each person has an independent completion log, so completing a habit for yourself never completes (or overwrites) your partner's occurrence.
+
+### 9.2 Scheduling
+- Every day or selected weekdays. **No time of day** is required.
+- Each scheduled day is a fresh occurrence. A missed occurrence stays in history and never blocks the next scheduled day. Unscheduled days are neutral.
+
+### 9.3 9:30 PM check-in (planned — not implemented)
+Every day at 9:30 PM in the device's local time zone, for every active habit scheduled that day:
+- If the user already completed it → no reminder.
+- Otherwise ask "Did you complete it today?" — **Yes** marks completed, **No** marks missed.
+- No answer by midnight → automatically marked missed.
+- Shared habits: each user gets their own check-in only if their own completion is still open.
+- One check-in per user, never duplicated across that user's multiple devices.
+
+Current mock frontend: no notification is sent and no prompt is shown. The only related behaviour is derived: today's occurrence stays open until midnight, after which it counts as missed (the outcome the planned midnight expiry would produce). The Habits screen carries a "Planned" notice and does not claim reminders work.
+
+### 9.4 Streaks (per user, independent)
+- Shown for each participant: **current streak** and **longest streak** (plus this-week %). For a shared habit both users' streaks are shown side by side; a partner's personal habit shows only its owner.
+- A missed scheduled occurrence breaks that user's streak; unscheduled days do not. Today's still-open occurrence neither counts nor breaks.
+
+### 9.5 History calendar
+- Five-week Monday-aligned calendar per habit. Colours: **green** = you completed, **cyan/blue** = partner completed, **red** = missed, **neutral** = unscheduled (outlined = still open today).
+- Shared habits split each date into two halves (you left, partner right) with independent statuses.
+- Dates are clickable: the detail panel shows whether the habit was scheduled, who completed it and when, who missed it, or that it is still open today.
+
+## 10. Architecture
 - `frontend/` — React + Vite + TypeScript + Tailwind CSS + Lucide + React Router.
 - Layout: `components/{layout,tasks,habits,rana,ui}`, `pages`, `hooks`, `services` (pure date/selector/RANA logic), `store` (context + reducer), `data` (mock data), `types`, `styles`.
 - Mock data is isolated in `src/data`; the store is the only place state is mutated, so it can later be swapped for IndexedDB + Supabase sync.
 - Planned stack (not built): Supabase (auth + PostgreSQL + Realtime), IndexedDB offline-first, PWA, Vercel, native Android/macOS companions.
 
-## 10. Status (Phase 1 complete)
-### Implemented (functional in the UI)
+## 11. Status
+### Implemented frontend functionality
 - Dark / light / system theme with tokens; responsive shell (sidebar on desktop, drawer on mobile); translucent sidebar with live badges and a two-user "in sync" card.
-- **RANA briefing** (`/briefing`): first screen each local day (tracked in `localStorage`), deterministic copy, deadlines → tasks → habits, "Let's get started" opens Home. Replay from Settings or the floating companion. Floating RANA shows a status line and acknowledges completions.
-- **Today**: urgency-coloured deadline cards with live countdown, daily task cards, habit rows, live daily progress ("3 of 6 tasks completed"), swipe-right-to-complete on touch, check controls elsewhere. Completed items keep their position (green check, strikethrough, completion time, muted). Undo is possible the same day.
-- **Add Task**: Daily / Deadline / Habit with conditional fields, validation (deadline must be in the future), notes, *Notify second user* toggle (default **off**), toast confirmation; new items appear in the right screens.
-- **Home** (progress hero, next deadline, coming up, Together + recent updates), **Upcoming**, **Deadlines** (Active | Past; past hidden by default), **Habits** (streak, weekly %, 7-day dots, 4-week grid, pause/resume), **Completed**, **Past / Missed**, **Settings** (theme, account/partner placeholders, replay briefing).
-- Expiry is derived from the clock: an incomplete deadline past its time leaves Today/Deadlines and appears in Past.
-### Mock-data only
-- All tasks, habits, history, partner (Aanya) and activity. State lives in memory and resets on reload. The notification toggle and bell are visual only; no notifications are sent. Account/partner info in Settings is static. Seed deadlines are generated relative to "now" (clamped to end of day).
-### Planned for later phases
-- Supabase auth/DB, realtime sync, IndexedDB offline storage, PWA install, real reminders/notifications, full recurrence engine, habit archive, editing/deleting tasks, unlock-triggered briefing on macOS/Android.
+- **RANA briefing** (`/briefing`): first screen each local day (tracked in `localStorage`), deterministic copy, deadlines → tasks → your habits, "Let's get started" opens Home. Replay from Settings or the floating companion. Floating RANA shows a status line and acknowledges completions.
+- **Today**: urgency-coloured deadline cards with live countdown, daily task cards, live daily progress, swipe-right-to-complete on touch, check controls elsewhere. Completed items keep their position (green check, strikethrough, completion time, muted); undo is possible the same day. Habits section shows your personal and shared habits (with your partner's status on shared ones) and, read-only, your partner's personal habits.
+- **Habits** (section 9): personal / partner's / shared types with All·Mine·Partner's·Shared filter, independent per-user completion, per-user current and longest streaks, weekly %, two-user clickable calendar, pause/resume.
+- **Add Task**: Daily / Deadline / Habit with conditional fields and validation. Habits choose *Just me* or *Shared*, every day or selected weekdays, no time. The *Notify second user* toggle applies to tasks and personal habits (hidden for shared habits, where both are participants). Default off.
+- **Home**, **Upcoming**, **Deadlines** (Active | Past), **Completed**, **Past / Missed** (including missed habit days per user), **Settings** (theme, account/partner placeholders, replay briefing).
+- Deadline expiry and habit missed-state are derived from the clock.
+### Mock-only functionality
+- All tasks, habits, history, the partner (Aanya) and activity are sample data held in memory and reset on reload. Partner actions are never live.
+- The notify toggle and bell are visual; no notifications are sent. Account/partner info in Settings is static.
+### Planned backend / notification functionality
+- Supabase auth/DB, realtime sync, IndexedDB offline storage, PWA install.
+- Real reminders and notifications, including the 9:30 PM habit check-in with midnight auto-miss and per-user de-duplication across devices (section 9.3).
+- Full recurrence engine, habit archive, editing/deleting items, unlock-triggered briefing on macOS/Android.
 
-## 11. Open product decisions
+## 12. Open product decisions
 - Default for *Notify second user* (Phase 1: off).
 - Whether today's completions should also appear on Completed before the daily reset (Phase 1: no).
 - Urgency thresholds (currently 3 h critical / 8 h approaching).
 - Daily reset time (Phase 1: local midnight).
-- Whether future items should be completable from Upcoming (Phase 1: view-only).
+- Whether future items are completable from Upcoming (Phase 1: view-only).
 - Where "Let's get started" lands (Phase 1: Home).
+- Whether a user may mark a partner's personal habit complete on their behalf (Phase 1: no — only the owner completes it).

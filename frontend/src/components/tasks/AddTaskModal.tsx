@@ -36,6 +36,7 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5])
   const [notes, setNotes] = useState('')
   const [notify, setNotify] = useState(false)
+  const [shared, setShared] = useState(false)
   const [error, setError] = useState<{ field: string; msg: string } | null>(null)
 
   const submit = (e: FormEvent) => {
@@ -46,7 +47,7 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
 
     if (type === 'habit') {
       if (recurrence === 'weekdays' && days.length === 0) return setError({ field: 'days', msg: 'Pick at least one day.' })
-      addHabit({ ...common, schedule: recurrence === 'daily' ? { type: 'daily' } : { type: 'weekdays', days: [...days].sort() } })
+      addHabit({ ...common, shared, notifySecondUser: shared || notify, schedule: recurrence === 'daily' ? { type: 'daily' } : { type: 'weekdays', days: [...days].sort() } })
       onAdded(`Habit “${name}” added`)
     } else if (type === 'deadline') {
       if (!date || !dueTime) return setError({ field: 'date', msg: 'Choose a deadline date and time.' })
@@ -96,7 +97,18 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
 
       {type === 'habit' && (
         <div className="space-y-3">
-          <Field label="Repeats">
+          <Field label="Who tracks it" hint={shared ? `${partner.name} and you each keep an independent record and streak.` : 'Only you check it off. It stays visible to both of you.'}>
+            <Segmented
+              label="Habit type"
+              value={shared ? 'shared' : 'personal'}
+              onChange={(v) => setShared(v === 'shared')}
+              options={[
+                { value: 'personal', label: 'Just me' },
+                { value: 'shared', label: `Shared with ${partner.name}` },
+              ]}
+            />
+          </Field>
+          <Field label="Repeats" hint="No time of day needed — a check-in at 9:30 PM is planned.">
             <Segmented
               label="Recurrence"
               value={recurrence}
@@ -131,6 +143,7 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
         <textarea id="at-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Anything worth remembering" className={cn(fieldCls, 'h-auto resize-none py-2.5')} maxLength={300} />
       </Field>
 
+      {!(type === 'habit' && shared) && (
       <div className="flex items-center gap-3 rounded-2xl border border-line/10 bg-card/60 p-3.5">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
           <BellRing className="h-[18px] w-[18px]" />
@@ -141,6 +154,7 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
         </div>
         <Switch checked={notify} onChange={setNotify} label={`Notify ${partner.name}`} />
       </div>
+      )}
 
       <div className="flex gap-3 pt-1">
         <Button type="button" variant="ghost" className="flex-1" onClick={onClose}>

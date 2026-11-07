@@ -8,17 +8,18 @@ import { ProgressRing } from '../components/ui/ProgressRing'
 import { EmptyState, SectionHeader } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
 import { formatLongDate, formatTime, greetingFor } from '../services/dates'
-import { habitProgress, taskProgress, todayActivity, todayDeadlines, upcomingTasks } from '../services/selectors'
+import { habitOccurrencesToday, habitProgress, taskProgress, todayActivity, todayDeadlines, upcomingTasks } from '../services/selectors'
 
 export default function Home() {
   const { tasks, habits, now, today, me, users, userById } = useApp()
   const t = taskProgress(tasks, now)
-  const h = habitProgress(habits, now)
+  const h = habitProgress(habits, now, me.id)
+  const occ = habitOccurrencesToday(habits, now)
   const next = todayDeadlines(tasks, now).find((d) => d.status === 'open')
   const activity = todayActivity(tasks, habits, now)
   const ahead = upcomingTasks(tasks, now).slice(0, 3)
-  const total = t.total + h.total
-  const together = t.done + h.done
+  const total = t.total + occ.length
+  const together = t.done + occ.filter((o) => o.done).length
 
   return (
     <>

@@ -7,7 +7,7 @@ import { RanaRobot, type RanaMood } from './RanaRobot'
 
 /** Small floating companion. Deterministic status + restrained acknowledgement — not a chatbot. */
 export function FloatingRana() {
-  const { tasks, habits, now, pulse } = useApp()
+  const { tasks, habits, now, pulse, me } = useApp()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [mood, setMood] = useState<RanaMood>('idle')
@@ -32,7 +32,7 @@ export function FloatingRana() {
     }
   }, [pulse])
 
-  const message = ack ?? ranaStatus(tasks, habits, now)
+  const message = ack ?? ranaStatus(tasks, habits, now, me.id)
   const showBubble = open || ack !== null
 
   return (

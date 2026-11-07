@@ -16,6 +16,8 @@ export interface NewHabitInput {
   notes?: string
   schedule: HabitSchedule
   notifySecondUser: boolean
+  /** Shared habits are tracked independently by both users. */
+  shared: boolean
 }
 
 export interface AppCtx {

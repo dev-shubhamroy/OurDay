@@ -4,9 +4,9 @@ import { ProgressRing } from '../ui/ProgressRing'
 
 /** Dynamic daily progress: "3 of 6 tasks completed". */
 export function DailyProgressCard() {
-  const { tasks, habits, now } = useApp()
+  const { tasks, habits, now, me } = useApp()
   const t = taskProgress(tasks, now)
-  const h = habitProgress(habits, now)
+  const h = habitProgress(habits, now, me.id)
   return (
     <div className="panel relative overflow-hidden p-5">
       <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />

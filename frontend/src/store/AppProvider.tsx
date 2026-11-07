@@ -13,7 +13,7 @@ interface State {
 
 type Action =
   | { type: 'toggleTask'; id: string; at: string }
-  | { type: 'toggleHabit'; id: string; day: string; at: string }
+  | { type: 'toggleHabit'; id: string; user: string; day: string; at: string }
   | { type: 'pauseHabit'; id: string; paused: boolean }
   | { type: 'addTask'; task: Task }
   | { type: 'addHabit'; habit: Habit }
@@ -31,16 +31,17 @@ function reducer(state: State, action: Action): State {
       return { ...state, tasks, pulse: completed ? state.pulse + 1 : state.pulse }
     }
     case 'toggleHabit': {
+      // Only the acting user's own record changes; a partner's record is never touched.
       let completed = false
       const habits = state.habits.map((h) => {
-        if (h.id !== action.id) return h
-        const log = { ...h.log }
-        if (log[action.day]?.status === 'done') delete log[action.day]
+        if (h.id !== action.id || !h.participants.includes(action.user)) return h
+        const mine = { ...(h.log[action.user] ?? {}) }
+        if (mine[action.day]?.status === 'done') delete mine[action.day]
         else {
-          log[action.day] = { status: 'done', at: action.at, by: ME }
+          mine[action.day] = { status: 'done', at: action.at }
           completed = true
         }
-        return { ...h, log }
+        return { ...h, log: { ...h.log, [action.user]: mine } }
       })
       return { ...state, habits, pulse: completed ? state.pulse + 1 : state.pulse }
     }
@@ -62,7 +63,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const today = toKey(now)
 
   const toggleTask = useCallback((id: string) => dispatch({ type: 'toggleTask', id, at: new Date().toISOString() }), [])
-  const toggleHabit = useCallback((id: string) => dispatch({ type: 'toggleHabit', id, day: toKey(new Date()), at: new Date().toISOString() }), [])
+  const toggleHabit = useCallback((id: string) => dispatch({ type: 'toggleHabit', id, user: ME, day: toKey(new Date()), at: new Date().toISOString() }), [])
   const setHabitPaused = useCallback((id: string, paused: boolean) => dispatch({ type: 'pauseHabit', id, paused }), [])
   const addTask = useCallback(
     (input: NewTaskInput) =>
@@ -70,7 +71,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [],
   )
   const addHabit = useCallback(
-    (input: NewHabitInput) => dispatch({ type: 'addHabit', habit: { ...input, id: newId('h'), createdBy: ME, paused: false, log: {} } }),
+    (input: NewHabitInput) => {
+      const { shared, ...rest } = input
+      dispatch({
+        type: 'addHabit',
+        habit: { ...rest, id: newId('h'), createdBy: ME, participants: shared ? USERS.map((u) => u.id) : [ME], paused: false, startDate: toKey(new Date()), log: {} },
+      })
+    },
     [],
   )
 

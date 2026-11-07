@@ -48,25 +48,38 @@ export function createSeed(now: Date): { tasks: Task[]; habits: Habit[] } {
     { ...base, id: 't-h5', kind: 'daily', title: 'Practice DSA', createdBy: 'u1', date: day(-2), time: '10:00', notifySecondUser: false, status: 'completed', completedAt: at(day(-2), '10:50'), completedBy: 'u1' },
   ]
 
-  // Pattern strings run oldest → newest over the 28 days before today.
-  // d = done, m = missed (on scheduled days only).
-  const history = (pattern: string, schedule: Habit['schedule'], by: string): Habit['log'] => {
-    const log: Habit['log'] = {}
-    const len = pattern.length
-    for (let i = 0; i < len; i++) {
-      const key = day(i - len)
-      const dow = new Date(atTime(key, '00:00')).getDay()
+  // History patterns run oldest → newest over the 28 days before today:
+  // d = completed, m = missed (only applied on scheduled days).
+  const HISTORY_DAYS = 28
+  const startDate = day(-HISTORY_DAYS)
+  const history = (pattern: string, schedule: Habit['schedule'], hour: string): Habit['log'][string] => {
+    const log: Habit['log'][string] = {}
+    const p = pattern.slice(-HISTORY_DAYS)
+    for (let i = 0; i < p.length; i++) {
+      const key = day(i - p.length)
+      const dow = atTime(key, '00:00').getDay()
       if (schedule.type === 'weekdays' && !schedule.days.includes(dow)) continue
-      log[key] = pattern[i] === 'd' ? { status: 'done', at: at(key, '20:00'), by } : { status: 'missed' }
+      log[key] = p[i] === 'd' ? { status: 'done', at: at(key, hour) } : { status: 'missed' }
     }
     return log
   }
+  // Partner already checked in for one habit today — independent of the current user.
+  const earlierToday = new Date(Math.max(atTime(today, '00:01').getTime(), now.getTime() - 2 * HOUR)).toISOString()
 
-  const exerciseSchedule: Habit['schedule'] = { type: 'weekdays', days: [1, 2, 4, 5, 6, 0] }
+  const common = { createdAt: created, paused: false, startDate }
+  const exercise: Habit['schedule'] = { type: 'weekdays', days: [1, 2, 4, 5, 6, 0] }
+  const journal: Habit['schedule'] = { type: 'weekdays', days: [1, 2, 3, 4, 5] }
   const habits: Habit[] = [
-    { id: 'h-1', title: 'Exercise', createdBy: 'u1', notifySecondUser: true, paused: false, schedule: exerciseSchedule, log: history('ddmddddmdddddmdddddddddmdddd', exerciseSchedule, 'u1') },
-    { id: 'h-2', title: 'Read', notes: '20 pages minimum.', createdBy: 'u1', notifySecondUser: false, paused: false, schedule: { type: 'daily' }, log: history('dmddmdddddmdmdddddddmddddmdm'.slice(0, 27) + 'm', { type: 'daily' }, 'u1') },
-    { id: 'h-3', title: 'Drink water', createdBy: 'u2', notifySecondUser: true, paused: false, schedule: { type: 'daily' }, log: history('dddddmddddddddmddddddddddddd', { type: 'daily' }, 'u2') },
+    // Personal habit (current user)
+    { ...common, id: 'h-1', title: 'Exercise', createdBy: 'u1', participants: ['u1'], notifySecondUser: true, schedule: exercise, log: { u1: history('ddmddddmdddddmdddddddddmdddd', exercise, '19:10') } },
+    // Shared habit — each person has an independent record and streak
+    { ...common, id: 'h-2', title: 'Read', notes: '20 pages minimum.', createdBy: 'u1', participants: ['u1', 'u2'], notifySecondUser: true, schedule: { type: 'daily' },
+      log: { u1: history('dmddmdddddmdmdddddddmddddmdd', { type: 'daily' }, '21:05'), u2: history('dddddmdddddddddddddddddddmmm', { type: 'daily' }, '22:15') } },
+    // Shared habit — partner has already completed today, you have not
+    { ...common, id: 'h-3', title: 'Drink water', createdBy: 'u2', participants: ['u1', 'u2'], notifySecondUser: true, schedule: { type: 'daily' },
+      log: { u1: history('dddddmddddddddmdddddddddddmd', { type: 'daily' }, '20:30'), u2: { ...history('ddddddddddddddddmddddddddddd', { type: 'daily' }, '20:45'), [today]: { status: 'done', at: earlierToday } } } },
+    // Partner's habit (visible to both)
+    { ...common, id: 'h-4', title: 'Evening journal', createdBy: 'u2', participants: ['u2'], notifySecondUser: false, schedule: journal, log: { u2: history('ddddmdddddmddddddddddmddddd', journal, '21:40') } },
   ]
 
   return { tasks, habits }

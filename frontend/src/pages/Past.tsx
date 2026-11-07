@@ -42,8 +42,8 @@ export default function Past() {
             <section className="animate-rise">
               <SectionHeader icon={<Repeat className="h-4 w-4" />} title="Missed habit days" meta={`${missedHabits.length}`} />
               <div className="space-y-2.5">
-                {missedHabits.map(({ habit, date }) => (
-                  <TaskRow key={`${habit.id}-${date}`} kind="habit" title={habit.title} owner={userById(habit.createdBy)} muted meta={formatDayLabel(date, today)} right={<Chip tone="muted">Missed</Chip>} />
+                {missedHabits.map(({ habit, user, date }) => (
+                  <TaskRow key={`${habit.id}-${user}-${date}`} kind="habit" title={habit.title} owner={userById(user)} muted meta={`${userById(user).name} · ${formatDayLabel(date, today)}`} right={<Chip tone="muted">Missed</Chip>} />
                 ))}
               </div>
             </section>

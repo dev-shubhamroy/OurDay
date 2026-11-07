@@ -1,6 +1,6 @@
-import type { CompletionRecord, DateKey, Habit, Task } from '../types'
+import type { CompletionRecord, DateKey, Habit, Task, UserId } from '../types'
 import { addDays, toKey } from './dates'
-import { isScheduled } from './habits'
+import { dayState, isScheduled, isShared, participates } from './habits'
 
 const byDue = (a: Task, b: Task) => new Date(a.dueAt ?? 0).getTime() - new Date(b.dueAt ?? 0).getTime()
 /** Stable order for daily tasks: timed first by time, then by creation. */
@@ -19,9 +19,24 @@ export function todayDaily(tasks: Task[], now: Date): Task[] {
   return tasks.filter((t) => t.kind === 'daily' && t.date === today).sort(byPlan)
 }
 
-export function todayHabits(habits: Habit[], now: Date): Habit[] {
+/** Habits the given user takes part in (personal + shared) that are scheduled today. */
+export function todayHabits(habits: Habit[], now: Date, user: UserId): Habit[] {
   const today = toKey(now)
-  return habits.filter((h) => !h.paused && isScheduled(h, today))
+  return habits.filter((h) => !h.paused && participates(h, user) && isScheduled(h, today) && today >= h.startDate)
+}
+
+/** The other person's personal habits scheduled today (visible, read-only). */
+export function partnerHabitsToday(habits: Habit[], now: Date, partner: UserId): Habit[] {
+  const today = toKey(now)
+  return habits.filter((h) => !h.paused && !isShared(h) && participates(h, partner) && isScheduled(h, today) && today >= h.startDate)
+}
+
+/** Every (habit, user) occurrence scheduled today, for both users. */
+export function habitOccurrencesToday(habits: Habit[], now: Date) {
+  const today = toKey(now)
+  return habits
+    .filter((h) => !h.paused && isScheduled(h, today) && today >= h.startDate)
+    .flatMap((habit) => habit.participants.map((user) => ({ habit, user, done: habit.log[user]?.[today]?.status === 'done' })))
 }
 
 export interface Progress {
@@ -36,10 +51,10 @@ export function taskProgress(tasks: Task[], now: Date): Progress {
   return progress(all.filter((t) => t.status === 'completed').length, all.length)
 }
 
-export function habitProgress(habits: Habit[], now: Date): Progress {
+export function habitProgress(habits: Habit[], now: Date, user: UserId): Progress {
   const today = toKey(now)
-  const list = todayHabits(habits, now)
-  return progress(list.filter((h) => h.log[today]?.status === 'done').length, list.length)
+  const list = todayHabits(habits, now, user)
+  return progress(list.filter((h) => h.log[user]?.[today]?.status === 'done').length, list.length)
 }
 
 export function upcomingTasks(tasks: Task[], now: Date): Task[] {
@@ -61,6 +76,7 @@ export function pastDeadlines(tasks: Task[], now: Date): Task[] {
 
 export interface MissedHabit {
   habit: Habit
+  user: UserId
   date: DateKey
 }
 
@@ -70,7 +86,13 @@ export function missedItems(tasks: Task[], habits: Habit[], now: Date, habitDays
   const daily = tasks.filter((t) => t.kind === 'daily' && t.status === 'open' && t.date < today).sort((a, b) => b.date.localeCompare(a.date))
   const cutoff = addDays(today, -habitDays)
   const missedHabits: MissedHabit[] = habits
-    .flatMap((habit) => Object.entries(habit.log).filter(([k, e]) => e.status === 'missed' && k >= cutoff && k < today).map(([date]) => ({ habit, date })))
+    .flatMap((habit) =>
+      habit.participants.flatMap((user) =>
+        Array.from({ length: habitDays }, (_, i) => addDays(today, -(i + 1)))
+          .filter((date) => date >= cutoff && dayState(habit, user, date, today) === 'missed')
+          .map((date) => ({ habit, user, date })),
+      ),
+    )
     .sort((a, b) => b.date.localeCompare(a.date))
   return { deadlines, daily, missedHabits }
 }
@@ -82,9 +104,11 @@ export function completionHistory(tasks: Task[], habits: Habit[], now: Date): Co
     .filter((t) => t.status === 'completed' && t.completedAt && toKey(new Date(t.completedAt)) < today)
     .map((t) => ({ id: `c-${t.id}`, itemId: t.id, kind: t.kind, title: t.title, completedAt: t.completedAt!, completedBy: t.completedBy ?? t.createdBy }))
   const fromHabits: CompletionRecord[] = habits.flatMap((h) =>
-    Object.entries(h.log)
-      .filter(([k, e]) => e.status === 'done' && e.at && k < today)
-      .map(([k, e]) => ({ id: `c-${h.id}-${k}`, itemId: h.id, kind: 'habit' as const, title: h.title, completedAt: e.at!, completedBy: e.by ?? h.createdBy })),
+    Object.entries(h.log).flatMap(([user, days]) =>
+      Object.entries(days)
+        .filter(([k, e]) => e.status === 'done' && e.at && k < today)
+        .map(([k, e]) => ({ id: `c-${h.id}-${user}-${k}`, itemId: h.id, kind: 'habit' as const, title: h.title, completedAt: e.at!, completedBy: user })),
+    ),
   )
   return [...fromTasks, ...fromHabits].sort((a, b) => b.completedAt.localeCompare(a.completedAt))
 }
@@ -95,8 +119,10 @@ export function todayActivity(tasks: Task[], habits: Habit[], now: Date): Comple
   const t: CompletionRecord[] = tasks
     .filter((x) => x.status === 'completed' && x.completedAt && toKey(new Date(x.completedAt)) === today)
     .map((x) => ({ id: `a-${x.id}`, itemId: x.id, kind: x.kind, title: x.title, completedAt: x.completedAt!, completedBy: x.completedBy ?? x.createdBy }))
-  const h: CompletionRecord[] = habits
-    .filter((x) => x.log[today]?.status === 'done')
-    .map((x) => ({ id: `a-${x.id}`, itemId: x.id, kind: 'habit' as const, title: x.title, completedAt: x.log[today].at!, completedBy: x.log[today].by ?? x.createdBy }))
+  const h: CompletionRecord[] = habits.flatMap((x) =>
+    x.participants
+      .filter((u) => x.log[u]?.[today]?.status === 'done')
+      .map((u) => ({ id: `a-${x.id}-${u}`, itemId: x.id, kind: 'habit' as const, title: x.title, completedAt: x.log[u][today].at!, completedBy: u })),
+  )
   return [...t, ...h].sort((a, b) => b.completedAt.localeCompare(a.completedAt))
 }

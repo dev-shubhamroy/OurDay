@@ -14,7 +14,7 @@ import { remainingMs, urgencyOf } from '../services/urgency'
 export default function Briefing() {
   const { tasks, habits, now, today, me } = useApp()
   const navigate = useNavigate()
-  const b = useMemo(() => buildBriefing(tasks, habits, now, me.name), [tasks, habits, now, me.name])
+  const b = useMemo(() => buildBriefing(tasks, habits, now, me), [tasks, habits, now, me])
 
   const start = () => {
     markBriefingSeen(today)

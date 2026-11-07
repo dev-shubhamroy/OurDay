@@ -1,88 +1,90 @@
-import { Flame, Pause, Play } from 'lucide-react'
+import { Flame, Pause, Play, Trophy } from 'lucide-react'
 import { useApp } from '../../hooks/useApp'
-import { dayName, dayState, lastDays, scheduleLabel, streakOf, weeklyRate, type DayState } from '../../services/habits'
-import { fromKey } from '../../services/dates'
-import type { Habit } from '../../types'
+import { habitScope, longestStreak, scheduleLabel, streakOf, weeklyRate } from '../../services/habits'
+import type { Habit, HabitScope } from '../../types'
 import { NotifyBell } from '../tasks/NotifyBell'
+import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import { CheckButton } from '../ui/CheckButton'
 import { cn } from '../ui/cn'
+import { HabitCalendar } from './HabitCalendar'
 
-const DOT: Record<DayState, string> = {
-  done: 'bg-ok border-ok text-white',
-  missed: 'bg-danger/15 border-danger/40 text-danger',
-  pending: 'border-accent/60 text-accent',
-  off: 'border-line/15 text-muted/50 border-dashed',
+const SCOPE_LABEL: Record<HabitScope, string> = { personal: 'Personal', partner: 'Partner’s', shared: 'Shared' }
+
+export function ScopeBadge({ scope, className }: { scope: HabitScope; className?: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold',
+        scope === 'shared' ? 'border-accent/25 bg-accent/10 text-accent' : scope === 'partner' ? 'border-partner/30 bg-partner/10 text-partner' : 'border-line/15 bg-line/10 text-muted',
+        className,
+      )}
+    >
+      {SCOPE_LABEL[scope]}
+    </span>
+  )
 }
 
 export function HabitCard({ habit }: { habit: Habit }) {
-  const { today, toggleHabit, setHabitPaused, userById } = useApp()
-  const streak = streakOf(habit, today)
-  const rate = weeklyRate(habit, today)
-  const week = lastDays(today, 7)
-  const month = lastDays(today, 28)
-  const todayState = dayState(habit, today, today)
-  const owner = userById(habit.createdBy)
+  const { today, me, toggleHabit, setHabitPaused, userById } = useApp()
+  const scope = habitScope(habit, me.id)
+  const mine = habit.participants.includes(me.id)
+  const myDone = habit.log[me.id]?.[today]?.status === 'done'
+  const people = [...habit.participants].sort((a) => (a === me.id ? -1 : 1))
 
   return (
     <article className={cn('panel flex flex-col gap-5 p-5 transition duration-300', habit.paused && 'opacity-60')}>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="flex items-center gap-2 truncate text-lg font-semibold">
-            {habit.title}
+          <h3 className="flex items-center gap-2 text-lg font-semibold">
+            <span className="truncate">{habit.title}</span>
             {habit.notifySecondUser && <NotifyBell />}
           </h3>
-          <p className="text-xs text-muted">
-            {scheduleLabel(habit)} · by {owner.name}
-            {habit.paused && ' · Paused'}
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+            <ScopeBadge scope={scope} />
+            <span>{scheduleLabel(habit)}</span>
+            {habit.paused && <span>· Paused</span>}
           </p>
         </div>
-        {todayState !== 'off' && !habit.paused && (
-          <CheckButton checked={todayState === 'done'} onToggle={() => toggleHabit(habit.id)} label={`${todayState === 'done' ? 'Mark incomplete' : 'Mark done today'}: ${habit.title}`} />
+        {mine && !habit.paused && (
+          <CheckButton checked={myDone} onToggle={() => toggleHabit(habit.id)} label={`${myDone ? 'Undo' : 'Mark done today'}: ${habit.title}`} />
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="tile p-3">
-          <p className="eyebrow mb-1">Streak</p>
-          <p className="flex items-center gap-1.5 text-2xl font-semibold tabular-nums">
-            <Flame className={cn('h-5 w-5', streak > 0 ? 'text-warn' : 'text-muted')} />
-            {streak}
-            <span className="text-xs font-normal text-muted">{streak === 1 ? 'day' : 'days'}</span>
-          </p>
-        </div>
-        <div className="tile p-3">
-          <p className="eyebrow mb-1">This week</p>
-          <p className="text-2xl font-semibold tabular-nums">{rate}%</p>
-          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-line/15">
-            <div className="h-full rounded-full bg-accent transition-all duration-700" style={{ width: `${rate}%` }} />
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <p className="eyebrow mb-2">Last 7 days</p>
-        <div className="flex justify-between">
-          {week.map((k) => (
-            <div key={k} className="flex flex-col items-center gap-1.5">
-              <span className={cn('grid h-8 w-8 place-items-center rounded-full border text-[10px] font-semibold', DOT[dayState(habit, k, today)])} title={`${k}: ${dayState(habit, k, today)}`}>
-                {dayState(habit, k, today) === 'done' ? '✓' : dayState(habit, k, today) === 'missed' ? '×' : ''}
-              </span>
-              <span className={cn('text-[10px]', k === today ? 'font-semibold text-accent' : 'text-muted')}>{dayName(fromKey(k).getDay()).slice(0, 2)}</span>
+      {/* Independent streaks per person */}
+      <div className={cn('grid gap-3', people.length > 1 ? 'sm:grid-cols-2' : '')}>
+        {people.map((u) => {
+          const user = userById(u)
+          const current = streakOf(habit, u, today)
+          return (
+            <div key={u} className="tile p-3">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
+                <Avatar user={user} size="xs" />
+                {u === me.id ? 'You' : user.name}
+                <span className="ml-auto font-normal tabular-nums">{weeklyRate(habit, u, today)}% this week</span>
+              </p>
+              <div className="flex items-end gap-4">
+                <div>
+                  <p className="eyebrow">Current</p>
+                  <p className="flex items-center gap-1 text-2xl font-semibold tabular-nums">
+                    <Flame className={cn('h-5 w-5', current > 0 ? 'text-warn' : 'text-muted')} />
+                    {current}
+                  </p>
+                </div>
+                <div>
+                  <p className="eyebrow">Longest</p>
+                  <p className="flex items-center gap-1 text-2xl font-semibold tabular-nums">
+                    <Trophy className="h-4 w-4 text-muted" />
+                    {longestStreak(habit, u, today)}
+                  </p>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
+          )
+        })}
       </div>
 
-      <div>
-        <p className="eyebrow mb-2">Last 4 weeks</p>
-        <div className="grid grid-cols-14 gap-1" style={{ gridTemplateColumns: 'repeat(14, minmax(0, 1fr))' }}>
-          {month.map((k) => {
-            const s = dayState(habit, k, today)
-            return <span key={k} title={`${k}: ${s}`} className={cn('aspect-square rounded-[5px]', s === 'done' ? 'bg-ok/80' : s === 'missed' ? 'bg-danger/35' : s === 'pending' ? 'bg-accent/35' : 'bg-line/10')} />
-          })}
-        </div>
-      </div>
+      <HabitCalendar habit={habit} />
 
       <Button variant="ghost" size="sm" className="self-start" icon={habit.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} onClick={() => setHabitPaused(habit.id, !habit.paused)}>
         {habit.paused ? 'Resume habit' : 'Pause habit'}

@@ -50,19 +50,31 @@ export interface HabitLogEntry {
   status: 'done' | 'missed'
   /** ISO timestamp, present when `status === 'done'`. */
   at?: string
-  by?: UserId
 }
 
+/**
+ * A habit has one or two participants.
+ * - one participant, the current user  → personal habit
+ * - one participant, the other user    → partner's habit (visible to both)
+ * - both users                         → shared habit
+ * Each participant has an independent completion log; one person's completion
+ * never completes or overwrites the other's.
+ */
 export interface Habit extends NotificationPreference {
   id: string
   title: string
   notes?: string
   createdBy: UserId
+  participants: UserId[]
   schedule: HabitSchedule
   paused: boolean
-  /** One fresh occurrence per scheduled day; a miss never blocks the next day. */
-  log: Record<DateKey, HabitLogEntry>
+  /** First day the habit counts; earlier days are "unscheduled". */
+  startDate: DateKey
+  /** Per-user logs. A scheduled past day with no `done` entry counts as missed. */
+  log: Record<UserId, Record<DateKey, HabitLogEntry>>
 }
+
+export type HabitScope = 'personal' | 'partner' | 'shared'
 
 export interface CompletionRecord {
   id: string

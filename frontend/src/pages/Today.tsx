@@ -1,5 +1,5 @@
 import { CalendarCheck, Flag, ListChecks, PartyPopper, Repeat } from 'lucide-react'
-import { HabitRow } from '../components/habits/HabitRow'
+import { HabitRow, PartnerHabitRow } from '../components/habits/HabitRow'
 import { DailyProgressCard, ProgressStrip } from '../components/tasks/DailyProgress'
 import { DeadlineCard } from '../components/tasks/DeadlineCard'
 import { TaskCard } from '../components/tasks/TaskCard'
@@ -7,13 +7,14 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState, SectionHeader } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
 import { formatLongDate } from '../services/dates'
-import { todayDaily, todayDeadlines, todayHabits } from '../services/selectors'
+import { partnerHabitsToday, todayDaily, todayDeadlines, todayHabits } from '../services/selectors'
 
 export default function Today() {
-  const { tasks, habits, now } = useApp()
+  const { tasks, habits, now, me, partner } = useApp()
   const deadlines = todayDeadlines(tasks, now)
   const daily = todayDaily(tasks, now)
-  const todays = todayHabits(habits, now)
+  const todays = todayHabits(habits, now, me.id)
+  const theirs = partnerHabitsToday(habits, now, partner.id)
 
   return (
     <>
@@ -47,6 +48,16 @@ export default function Today() {
             <div className="space-y-2.5">
               {todays.length === 0 ? <EmptyState icon={<Repeat className="h-6 w-6" />} title="No habits scheduled today" /> : todays.map((h) => <HabitRow key={h.id} habit={h} />)}
             </div>
+            {theirs.length > 0 && (
+              <div className="mt-4">
+                <p className="eyebrow mb-2">{partner.name}’s habits</p>
+                <div className="space-y-2">
+                  {theirs.map((h) => (
+                    <PartnerHabitRow key={h.id} habit={h} />
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         </aside>
       </div>
