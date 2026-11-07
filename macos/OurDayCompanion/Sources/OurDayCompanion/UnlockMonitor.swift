@@ -13,10 +13,15 @@ final class UnlockMonitor {
     var onUnlock: ((UUID) -> Void)?
     private var gate: UnlockGate
     private let debug: Bool
+    private var pollTimer: Timer?
+    private var lastPolledLocked: Bool
+
 
     init(debug: Bool) {
         self.debug = debug
-        self.gate = UnlockGate(startLocked: UnlockMonitor.screenIsLockedNow())
+        let locked = UnlockMonitor.screenIsLockedNow()
+        self.lastPolledLocked = locked
+        self.gate = UnlockGate(startLocked: locked)
     }
 
     static func screenIsLockedNow() -> Bool {
@@ -40,6 +45,9 @@ final class UnlockMonitor {
             dn.addObserver(self, selector: #selector(debugLock), name: .init("com.ourday.companion.debug.lock"), object: nil)
             dn.addObserver(self, selector: #selector(debugUnlock), name: .init("com.ourday.companion.debug.unlock"), object: nil)
         }
+        // Safety net: if a distributed notification is ever missed, a lock-state *transition* seen by
+        // polling feeds the same gate (which de-duplicates), so nothing fires twice.
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in self?.poll() }
         Log.info("monitor started; screen locked now = \(UnlockMonitor.screenIsLockedNow()); gate startLocked = \(gate.lockedSinceLastUnlock)")
     }
 
@@ -52,6 +60,13 @@ final class UnlockMonitor {
         case .ignored(let reason):
             Log.info("signal \(s) [\(source)] → ignored: \(reason)")
         }
+    }
+
+    private func poll() {
+        let now = UnlockMonitor.screenIsLockedNow()
+        guard now != lastPolledLocked else { return }
+        lastPolledLocked = now
+        feed(now ? .screenLocked : .screenUnlocked, source: "poll")
     }
 
     @objc private func locked() { feed(.screenLocked, source: "system") }

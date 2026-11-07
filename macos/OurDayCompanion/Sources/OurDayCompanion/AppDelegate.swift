@@ -16,8 +16,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.button?.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "OurDay")
         let menu = NSMenu(); menu.delegate = self; statusItem.menu = menu
 
+        if debug { installDebugHooks() }
         monitor.onUnlock = { [weak self] id in self?.handleUnlock(id) }
         monitor.start()
+    }
+
+    /// Debug-only hooks so tests can drive and inspect the app without Accessibility permission.
+    private func installDebugHooks() {
+        let dn = DistributedNotificationCenter.default()
+        dn.addObserver(forName: .init("com.ourday.companion.debug.state"), object: nil, queue: .main) { [weak self] _ in
+            guard let self else { return }
+            let n = NSApp.windows.filter { $0.title == "RANA Briefing" && $0.isVisible }.count
+            Log.info("STATE briefingWindowsVisible=\(n) dashboardVisible=\(self.dashboard.isVisible) autoShow=\(self.prefs.autoShowOnUnlock) lastBriefingDay=\(self.prefs.lastBriefingDay ?? "nil") appearance=\(NSApp.effectiveAppearance.name.rawValue) loginItem=\(LoginItem.statusDescription)")
+        }
+        dn.addObserver(forName: .init("com.ourday.companion.debug.setAuto"), object: nil, queue: .main) { [weak self] n in
+            self?.prefs.autoShowOnUnlock = (n.userInfo?["on"] as? String) == "1"
+            Log.info("auto-show on unlock set to \(self?.prefs.autoShowOnUnlock ?? false) [debug]")
+        }
+        dn.addObserver(forName: .init("com.ourday.companion.debug.setLogin"), object: nil, queue: .main) { n in
+            LoginItem.set((n.userInfo?["on"] as? String) == "1")
+        }
+        dn.addObserver(forName: .init("com.ourday.companion.debug.setAppearance"), object: nil, queue: .main) { n in
+            // Simulation only: forces the app's appearance. A real system switch is tested by the user.
+            switch n.userInfo?["mode"] as? String { case "light": NSApp.appearance = NSAppearance(named: .aqua); case "dark": NSApp.appearance = NSAppearance(named: .darkAqua); default: NSApp.appearance = nil }
+        }
+        dn.addObserver(forName: .init("com.ourday.companion.debug.snapshot"), object: nil, queue: .main) { [weak self] n in
+            guard let path = n.userInfo?["path"] as? String, let view = NSApp.windows.first(where: { $0.title == "RANA Briefing" })?.contentView?.superview else { Log.info("snapshot: no window"); return }
+            _ = self
+            guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+            view.cacheDisplay(in: view.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+            Log.info("snapshot written (\(view.effectiveAppearance.name.rawValue))")
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }

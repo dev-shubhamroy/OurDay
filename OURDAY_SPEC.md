@@ -168,10 +168,27 @@ OurDay is a private app for two people, so authentication is deliberately simple
 - Milestone 2: native deterministic briefing from Supabase (needs a native sign-in; the web view's session is not shared with Swift). Port `services/rana.ts` logic to Swift or fetch via the same RLS-protected tables with the publishable key + user JWT.
 - Milestone 3: UserNotifications. **Supabase limitation:** nothing server-side can wake a closed Mac app without paid/Apple-key infrastructure (APNs needs a paid Developer account), so reminders must be scheduled locally with `UNCalendarNotificationTrigger` (system-delivered even if the app is not running) and rebuilt on every data change/launch/unlock via Realtime + a refetch. Partner notifications while the app is closed will be limited to those caught on the next refetch. Reminders 24h/12h/6h/3h/2h/1h/30m/15m/5m + at-deadline, past intervals skipped, cancelled on complete/delete, recomputed on edit, stable identifiers (`deadline-<id>-<interval>`) to avoid duplicates, 9:30 PM habit check-in. macOS caps pending local notifications at 64, so only the soonest deadlines are scheduled.
 
-**Status (Milestone 1)**
-- Verified on this Mac: builds and signs; runs in background with a menu-bar item; core logic tests 18/18; injected lock/unlock produces exactly one briefing window, ignores duplicate unlocks, first-vs-update works, Open Full Dashboard opens the dashboard window and closes the briefing, a later unlock reuses the single window.
-- Simulated only (debug `--debug` injection): the above sequences.
-- Not yet verified: a *real* lock → unlock on this Mac, launch-at-login across a real login, toggle-off behaviour, sleep/wake, light/dark appearance of the window, dashboard sign-in inside the web view.
+**Unlock-detection reliability (documented vs. undocumented)**
+Checked against the macOS 27 SDK headers on this Mac: `com.apple.screenIsLocked`/`screenIsUnlocked` and the `CGSSessionScreenIsLocked` key appear in **no** public header, so they are undocumented. The public header (`CGSession.h`) exposes only user id/name, on-console and login-done keys, none of which report screen lock. Documented options and why they are not enough:
+- `NSWorkspace.sessionDidBecomeActive/ResignActive` — fast user switching only; does not fire for a screen lock.
+- `NSWorkspace.didWake` / `screensDidWake` — wake, not unlock (a Mac can wake straight to a lock screen).
+- **Endpoint Security `ES_EVENT_TYPE_NOTIFY_LW_SESSION_UNLOCK`** — the one documented unlock event (public header), but it needs a root system extension with Apple's restricted `endpoint-security.client` entitlement, Full Disk Access and a paid Developer ID. Not viable for a personal companion.
+- Parsing the unified log (`loginwindow`) — private strings, worse than the notifications.
+Decision: keep the undocumented notifications as the primary signal and add a 2 s poll of the lock state as a second, independent source feeding the same de-duplicating gate. **Trade-off:** both depend on private names that Apple could change in any macOS release without notice (they have been stable for many releases); if they break, unlocks stop being detected but nothing else (notifications, dashboard) is affected, and the failure is visible in the log. They are not an officially supported API.
+
+**Status (Milestone 1 hardening)** — legend: REAL = performed on this Mac with real OS behaviour; INJECTED = real app, but lock/unlock signals sent by a test tool; USER = needs a human action.
+| Check | Result |
+|---|---|
+| Real lock → unlock opens exactly one briefing (earlier test, log `[system]`) | REAL, passed |
+| Launch at login registered via `SMAppService.mainApp` (appears in Background Task Management as enabled, path `~/Applications`) | REAL, passed |
+| Launch after an actual logout/restart | USER, pending |
+| Toggle OFF → lock/unlock shows nothing, app and monitor keep running; toggle ON → next unlock shows exactly one window | INJECTED, passed (menu click itself: USER, pending) |
+| Rapid cycles: 8 lock/unlock pairs 0.2 s apart → 0 extra windows (gate ignores unlocks within 5 s) | INJECTED, passed; real rapid cycling: USER, pending |
+| Appearance: dark (current system setting) and light render correctly | dark REAL; light INJECTED (app appearance forced, not the system setting) |
+| Date: unlock after a past `lastBriefingDay` → full; next unlock → update; survives app restart | INJECTED, passed; midnight rollover logic also unit-tested for Asia/Kolkata (18/18 core tests) |
+| Sleep → wake → unlock | USER, pending |
+| Dashboard sign-in inside the web view | not tested |
+Known limit: an unlock suppressed by the toggle does not count as the day's first briefing, so the first unlock after re-enabling is still "full".
 
 ## 12. Status
 ### Implemented frontend functionality
