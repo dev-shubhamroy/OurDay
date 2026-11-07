@@ -150,6 +150,29 @@ OurDay is a private app for two people, so authentication is deliberately simple
 - Mock data is isolated in `src/data`; the store is the only place state is mutated, so it can later be swapped for IndexedDB + Supabase sync.
 - Planned stack (not built): Supabase (auth + PostgreSQL + Realtime), IndexedDB offline-first, PWA, Vercel, native Android/macOS companions.
 
+## 11b. macOS companion (`macos/OurDayCompanion/`)
+
+**Approved product decision.** After every Mac unlock the *first* thing shown is a dedicated **RANA briefing window**, never the full dashboard.
+1. Detect unlock → 2. show the RANA briefing window → 3. first unlock of the local calendar day: complete briefing (upcoming deadlines; today's and tomorrow's tasks; habit status and check-ins; important partner activity) → 4. later unlocks the same day: concise update of relevant changes since the previous briefing → 5. prominent **Open Full Dashboard** button → 6. **Dismiss** button → 7. dismissing closes only the window: the companion keeps running and notifications are unaffected → 8. one unlock event can never produce more than one briefing window (one window object is reused). The dashboard is never opened automatically.
+
+**Architecture decisions**
+- Swift + AppKit/SwiftUI menu-bar agent (`LSUIElement`, no Dock icon), separate from the web app. The dashboard is the deployed site (`https://ourdayapp.vercel.app`) in a `WKWebView` window, so the web app is unchanged and keeps its own Supabase session (the companion never handles the password or any key).
+- Built with `swiftc` via `scripts/build-app.sh` (ad-hoc signed). **SwiftPM and XCTest do not work on this Mac** (only Command Line Tools installed; the manifest fails to link, no `XCTest`), so there is no `Package.swift`; tests are a dependency-free runner (`scripts/test.sh`). Full Xcode will be needed for notarised distribution.
+- Unlock detection: `com.apple.screenIsLocked` / `com.apple.screenIsUnlocked` on `DistributedNotificationCenter`. **Limitation:** Apple documents no public "screen unlocked" API; these notifications are long-standing but undocumented and could change. Documented `NSWorkspace` sleep/wake/session notifications are used for state only (waking from sleep without a lock screen is *not* an unlock). `CGSessionCopyCurrentDictionary()["CGSSessionScreenIsLocked"]` seeds the initial state. No permission prompt is required. A browser/PWA cannot observe any of this.
+- De-duplication (`CompanionCore/UnlockGate`): an unlock counts only if a lock was seen since the last accepted unlock, and not within 5 s of the previous one. Sleep-while-locked still fires on the later real unlock.
+- Full vs. update: decided by the last briefing's local calendar day (`BriefingDay`, user's timezone).
+- Setting "Show briefing when Mac unlocks" (menu bar) only controls the briefing window; it is independent of notifications. "Launch at login" uses `SMAppService.mainApp`.
+- Local data: only the toggle and the last briefing day (UserDefaults); log at `~/Library/Logs/OurDayCompanion/companion.log` holds events only, no tokens or task content.
+
+**Planned (not built)**
+- Milestone 2: native deterministic briefing from Supabase (needs a native sign-in; the web view's session is not shared with Swift). Port `services/rana.ts` logic to Swift or fetch via the same RLS-protected tables with the publishable key + user JWT.
+- Milestone 3: UserNotifications. **Supabase limitation:** nothing server-side can wake a closed Mac app without paid/Apple-key infrastructure (APNs needs a paid Developer account), so reminders must be scheduled locally with `UNCalendarNotificationTrigger` (system-delivered even if the app is not running) and rebuilt on every data change/launch/unlock via Realtime + a refetch. Partner notifications while the app is closed will be limited to those caught on the next refetch. Reminders 24h/12h/6h/3h/2h/1h/30m/15m/5m + at-deadline, past intervals skipped, cancelled on complete/delete, recomputed on edit, stable identifiers (`deadline-<id>-<interval>`) to avoid duplicates, 9:30 PM habit check-in. macOS caps pending local notifications at 64, so only the soonest deadlines are scheduled.
+
+**Status (Milestone 1)**
+- Verified on this Mac: builds and signs; runs in background with a menu-bar item; core logic tests 18/18; injected lock/unlock produces exactly one briefing window, ignores duplicate unlocks, first-vs-update works, Open Full Dashboard opens the dashboard window and closes the briefing, a later unlock reuses the single window.
+- Simulated only (debug `--debug` injection): the above sequences.
+- Not yet verified: a *real* lock → unlock on this Mac, launch-at-login across a real login, toggle-off behaviour, sleep/wake, light/dark appearance of the window, dashboard sign-in inside the web view.
+
 ## 12. Status
 ### Implemented frontend functionality
 - Dark / light / system theme with tokens; responsive shell (sidebar on desktop, drawer on mobile); translucent sidebar with live badges and a two-user "in sync" card.
