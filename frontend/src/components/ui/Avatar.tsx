@@ -8,7 +8,7 @@ export function Avatar({ user, size = 'md', className }: { user: User; size?: 'x
       title={user.name}
       className={cn(
         'inline-grid shrink-0 place-items-center rounded-full font-semibold ring-2 ring-surface',
-        user.tone === 'you' ? 'bg-accent/20 text-accent' : 'bg-partner/20 text-partner',
+        user.tone === 'you' ? 'bg-accent/20 text-accent' : 'bg-accent2/20 text-accent2',
         dims,
         className,
       )}

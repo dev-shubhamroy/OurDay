@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 export function SectionHeader({ icon, title, meta }: { icon: ReactNode; title: string; meta?: ReactNode }) {
   return (
     <div className="mb-3 flex items-center gap-2.5">
-      <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent/10 text-accent">{icon}</span>
-      <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+      <span className="grid h-8 w-8 place-items-center rounded-xl bg-accent/10 text-accent">{icon}</span>
+      <h2 className="text-xl font-semibold">{title}</h2>
       {meta && <span className="ml-auto text-sm text-muted">{meta}</span>}
     </div>
   )

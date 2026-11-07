@@ -12,7 +12,7 @@ const WEEK = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 function tone(state: DayState, isMe: boolean): string {
   switch (state) {
     case 'done':
-      return isMe ? 'bg-ok/85' : 'bg-accent/85'
+      return isMe ? 'bg-ok/85' : 'bg-partner/85'
     case 'missed':
       return 'bg-danger/70'
     case 'pending':
@@ -25,7 +25,7 @@ function tone(state: DayState, isMe: boolean): string {
 export function Legend() {
   const items = [
     ['bg-ok', 'You completed'],
-    ['bg-accent', 'Partner completed'],
+    ['bg-partner', 'Partner completed'],
     ['bg-danger/70', 'Missed'],
     ['bg-line/15', 'Not scheduled'],
     ['bg-transparent ring-1 ring-inset ring-accent/60', 'Open today'],
@@ -52,12 +52,12 @@ export function HabitCalendar({ habit }: { habit: Habit }) {
 
   return (
     <div>
-      <div className="mb-1.5 grid grid-cols-7 gap-1.5 text-center text-[10px] font-medium text-muted">
+      <div className="mb-1.5 grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-muted">
         {WEEK.map((d, i) => (
           <span key={i}>{d}</span>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1.5" role="grid" aria-label={`${habit.title} history`}>
+      <div className="grid grid-cols-7 gap-1" role="grid" aria-label={`${habit.title} history`}>
         {days.map((key) => {
           const future = key > today
           const states = people.map((u) => dayState(habit, u, key, today))
@@ -81,7 +81,7 @@ export function HabitCalendar({ habit }: { habit: Habit }) {
               {people.map((u, i) => (
                 <span key={u} className={cn('flex-1', tone(states[i], u === me.id))} />
               ))}
-              <span className={cn('absolute inset-0 grid place-items-center text-[11px] font-semibold', filled ? 'text-[#06131f]/85' : future ? 'text-muted' : 'text-muted/80')}>{fromKey(key).getDate()}</span>
+              <span className={cn('absolute inset-0 grid place-items-center text-[11px] font-semibold', filled ? 'text-on-fill/90' : future ? 'text-muted' : 'text-muted/80')}>{fromKey(key).getDate()}</span>
             </button>
           )
         })}

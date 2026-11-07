@@ -26,7 +26,7 @@ export function DeadlineCard({ task }: { task: Task }) {
 
   return (
     <SwipeRow onComplete={() => toggleTask(task.id)} disabled={done}>
-      <article className={cn('relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3.5 pl-5 sm:gap-3.5 sm:p-4 sm:pl-5 shadow-card transition duration-300', TINT[urgency], done && 'opacity-70')}>
+      <article className={cn('lift relative flex items-center gap-3 overflow-hidden rounded-tile border p-3.5 pl-5 sm:gap-3.5 sm:p-4 sm:pl-5 shadow-card', TINT[urgency], done && 'opacity-70')}>
         <span className={cn('absolute inset-y-0 left-0 w-1.5', BAR[urgency])} />
         <CheckButton checked={done} onToggle={() => toggleTask(task.id)} label={`${done ? 'Mark incomplete' : 'Mark complete'}: ${task.title}`} />
         <div className="min-w-0 flex-1">

@@ -15,7 +15,7 @@ export function TaskCard({ task }: { task: Task }) {
   const owner = userById(task.createdBy)
   return (
     <SwipeRow onComplete={() => toggleTask(task.id)} disabled={done}>
-      <article className={cn('flex items-center gap-3.5 rounded-2xl border border-line/10 bg-card/70 p-4 shadow-card transition duration-300', done && 'bg-card/40 opacity-70')}>
+      <article className={cn('lift flex items-center gap-3.5 rounded-tile border border-line/10 bg-card/70 p-4 shadow-card', done && 'bg-card/40 opacity-70')}>
         <CheckButton checked={done} onToggle={() => toggleTask(task.id)} label={`${done ? 'Mark incomplete' : 'Mark complete'}: ${task.title}`} />
         <div className="min-w-0 flex-1">
           <h3 className={cn('truncate text-[15px] font-medium', done && 'text-muted line-through decoration-muted/60')}>{task.title}</h3>

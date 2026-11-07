@@ -2,50 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ---------- Design tokens (RGB channels so Tailwind alpha works) ---------- */
+/*
+ * Midnight Aurora design tokens.
+ * Colours are RGB channels so Tailwind alpha utilities work (e.g. bg-accent/20).
+ * Change colours here only; components reference the Tailwind names in tailwind.config.ts.
+ */
 :root,
 [data-theme='dark'] {
   color-scheme: dark;
   --bg: 8 13 24; /* #080D18 */
-  --surface: 17 27 43; /* #111B2B */
-  --card: 24 40 61; /* #18283D */
-  --fg: 232 240 250;
-  --muted: 142 162 186;
-  --line: 120 160 210;
-  --accent: 39 200 255; /* #27C8FF */
+  --sidebar: 13 23 39; /* #0D1727 */
+  --surface: 17 31 51; /* #111F33 */
+  --elevated: 25 43 67; /* #192B43 */
+  --accent: 39 200 255; /* #27C8FF primary */
+  --accent-2: 119 117 255; /* #7775FF secondary (violet) */
+  --electric: 77 159 255; /* #4D9FFF */
+  --glow: 169 223 255; /* #A9DFFF */
   --accent-fg: 4 20 32;
-  --danger: 255 94 108;
-  --warn: 255 181 71;
+  --fg: 232 240 250;
+  --muted: 148 167 191;
+  --line: 120 160 210;
+  /* semantic */
   --ok: 66 214 150;
-  --partner: 255 150 120;
-  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 30px -16px rgb(0 0 0 / 0.65);
-  --shadow-glow: 0 0 0 1px rgb(39 200 255 / 0.25), 0 8px 28px -8px rgb(39 200 255 / 0.45);
+  --warn: 255 181 71;
+  --danger: 255 94 108;
+  --partner: 77 159 255; /* partner activity: cyan/blue */
+  --on-fill: 6 19 31; /* text on saturated status fills */
+  /* atmosphere */
+  --glass: 13 23 39;
+  --aura-a: 39 200 255;
+  --aura-b: 119 117 255;
+  --aura-a-alpha: 0.22;
+  --aura-b-alpha: 0.21;
+  /* elevation */
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 24px -12px rgb(0 0 0 / 0.55);
+  --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 4px 10px -2px rgb(0 0 0 / 0.35), 0 18px 36px -14px rgb(0 0 0 / 0.65);
+  --shadow-glow: 0 0 0 1px rgb(39 200 255 / 0.28), 0 8px 26px -8px rgb(39 200 255 / 0.5);
   --shadow-float: 0 24px 60px -20px rgb(0 0 0 / 0.75);
-  --glass: 17 27 43;
-  --bg-glow-a: 39 200 255;
-  --bg-glow-b: 255 150 120;
 }
 
 [data-theme='light'] {
   color-scheme: light;
-  --bg: 245 248 252; /* #F5F8FC */
+  --bg: 244 247 252; /* #F4F7FC */
+  --sidebar: 255 255 255; /* #FFFFFF */
   --surface: 255 255 255; /* #FFFFFF */
-  --card: 234 241 249; /* #EAF1F9 */
-  --fg: 14 28 46;
-  --muted: 87 106 130;
-  --line: 40 80 130;
+  --elevated: 227 236 248; /* #E3ECF8 */
   --accent: 22 141 206; /* #168DCE */
+  --accent-2: 113 101 217; /* #7165D9 */
+  --electric: 54 125 209; /* #367DD1 */
+  --glow: 220 239 255; /* #DCEFFF */
   --accent-fg: 255 255 255;
-  --danger: 218 52 70;
-  --warn: 207 122 8;
-  --ok: 18 150 98;
-  --partner: 222 98 64;
-  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 10px 28px -16px rgb(30 70 120 / 0.28);
-  --shadow-glow: 0 0 0 1px rgb(22 141 206 / 0.25), 0 8px 24px -8px rgb(22 141 206 / 0.4);
-  --shadow-float: 0 24px 50px -20px rgb(30 70 120 / 0.35);
+  --fg: 14 28 46;
+  --muted: 82 102 128;
+  --line: 40 80 130;
+  --ok: 14 130 84;
+  --warn: 176 100 0;
+  --danger: 205 45 60;
+  --partner: 54 125 209;
+  --on-fill: 255 255 255;
   --glass: 255 255 255;
-  --bg-glow-a: 22 141 206;
-  --bg-glow-b: 255 170 130;
+  --aura-a: 22 141 206;
+  --aura-b: 113 101 217;
+  --aura-a-alpha: 0.17;
+  --aura-b-alpha: 0.15;
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 1px 2px rgb(30 60 110 / 0.08), 0 10px 24px -14px rgb(30 70 130 / 0.25);
+  --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 4px 10px -2px rgb(30 60 110 / 0.12), 0 18px 36px -16px rgb(30 70 130 / 0.32);
+  --shadow-glow: 0 0 0 1px rgb(22 141 206 / 0.28), 0 8px 24px -8px rgb(22 141 206 / 0.45);
+  --shadow-float: 0 24px 50px -20px rgb(30 70 130 / 0.38);
 }
 
 @layer base {
@@ -54,9 +77,16 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-bg font-sans text-fg antialiased;
+    @apply bg-bg font-sans text-[15px] text-fg antialiased;
+    /* Tabular numerals keep times, countdowns and counts from jittering. */
+    font-variant-numeric: tabular-nums;
     transition: background-color 0.3s ease, color 0.3s ease;
     overscroll-behavior-y: none;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
   }
   :focus-visible {
     @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-bg;
@@ -64,10 +94,18 @@
   ::selection {
     background: rgb(var(--accent) / 0.3);
   }
-  button {
+  button,
+  [role='button'],
+  [role='checkbox'],
+  [role='switch'],
+  [role='radio'] {
     @apply cursor-pointer;
+    touch-action: manipulation;
   }
   @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
     *,
     *::before,
     *::after {
@@ -79,45 +117,64 @@
 }
 
 @layer components {
+  /* Selective glass: sidebar, top bar, floating panels and modals only. */
   .glass {
-    background: rgb(var(--glass) / 0.62);
-    -webkit-backdrop-filter: blur(22px) saturate(140%);
-    backdrop-filter: blur(22px) saturate(140%);
+    background: rgb(var(--glass) / 0.74);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(20px) saturate(140%);
     @apply border border-line/10;
   }
+  /* Main surface (20px). Solid for readability. */
   .panel {
-    @apply rounded-3xl border border-line/10 bg-surface/80 shadow-card;
+    @apply rounded-card border border-line/10 bg-surface shadow-card;
   }
+  /* Inner tile / row (16px). */
   .tile {
-    @apply rounded-2xl border border-line/10 bg-card/70 shadow-card transition duration-200;
+    @apply rounded-tile border border-line/10 bg-card/70 shadow-card transition duration-200;
   }
   .eyebrow {
-    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-muted;
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-muted;
   }
   .scroll-thin {
     scrollbar-width: thin;
     scrollbar-color: rgb(var(--line) / 0.3) transparent;
   }
+  /* Card hover elevation: subtle, pointer devices only. */
+  .lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  }
+  @media (hover: hover) {
+    .lift:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lift);
+    }
+  }
+  /* Expands the tap area of small visual controls to a 44px target without changing their look. */
+  .hit-44 {
+    position: relative;
+  }
+  .hit-44::before {
+    content: '';
+    position: absolute;
+    inset: -0.5rem;
+  }
 }
 
-/* Subtle futuristic backdrop: soft aurora + fine grid, no imagery. */
+/* Ambient, static cyan (upper-right) and violet (lower-left) illumination. No motion. */
 .app-backdrop {
-  background:
-    radial-gradient(60rem 40rem at 85% -10%, rgb(var(--bg-glow-a) / 0.13), transparent 60%),
-    radial-gradient(44rem 34rem at -10% 110%, rgb(var(--bg-glow-b) / 0.09), transparent 60%),
-    rgb(var(--bg));
+  position: relative;
+  background-color: rgb(var(--bg));
+  isolation: isolate;
 }
-.app-backdrop::after {
+.app-backdrop::before {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: -1;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgb(var(--line) / 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--line) / 0.045) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 75%);
+  background:
+    radial-gradient(64rem 44rem at 94% -6%, rgb(var(--aura-a) / var(--aura-a-alpha)), transparent 62%),
+    radial-gradient(58rem 42rem at -6% 106%, rgb(var(--aura-b) / var(--aura-b-alpha)), transparent 62%);
 }
 
 .safe-bottom {

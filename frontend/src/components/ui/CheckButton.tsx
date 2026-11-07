@@ -11,7 +11,7 @@ export function CheckButton({ checked, onToggle, label, size = 'md' }: { checked
       aria-label={label}
       onClick={onToggle}
       className={cn(
-        'relative grid shrink-0 place-items-center rounded-full border-2 transition duration-200',
+        'hit-44 relative grid shrink-0 place-items-center rounded-full border-2 transition duration-200',
         dim,
         checked ? 'border-ok bg-ok text-white animate-pop' : 'border-line/30 text-transparent hover:border-accent hover:bg-accent/10 hover:text-accent/70',
       )}

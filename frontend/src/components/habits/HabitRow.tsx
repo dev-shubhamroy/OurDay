@@ -18,7 +18,7 @@ export function HabitRow({ habit }: { habit: Habit }) {
   const partnerEntry = habit.log[partner.id]?.[today]
 
   return (
-    <div className={cn('flex items-center gap-3 rounded-2xl border border-line/10 bg-card/70 p-3.5 shadow-card transition duration-300', done && 'bg-card/40 opacity-70')}>
+    <div className={cn('lift flex items-center gap-3 rounded-tile border border-line/10 bg-card/70 p-3.5 shadow-card', done && 'bg-card/40 opacity-70')}>
       <CheckButton size="sm" checked={done} onToggle={() => toggleHabit(habit.id)} label={`${done ? 'Undo' : 'Mark done'}: ${habit.title}`} />
       <div className="min-w-0 flex-1">
         <p className={cn('flex items-center gap-2 text-sm font-medium', done && 'text-muted line-through decoration-muted/60')}>
@@ -28,7 +28,7 @@ export function HabitRow({ habit }: { habit: Habit }) {
         <p className="text-xs text-muted">
           {done ? <span className="text-ok">You: done at {formatTime(entry.at!)}</span> : scheduleLabel(habit)}
           {isShared(habit) && (
-            <span className={cn('block sm:ml-2 sm:inline', partnerEntry?.status === 'done' ? 'text-accent' : '')}>
+            <span className={cn('block sm:ml-2 sm:inline', partnerEntry?.status === 'done' ? 'text-partner' : '')}>
               <span className="hidden sm:inline">· </span>
               {partner.name}: {partnerEntry?.status === 'done' ? `done ${formatTime(partnerEntry.at!)}` : 'not yet'}
             </span>
@@ -52,13 +52,13 @@ export function PartnerHabitRow({ habit }: { habit: Habit }) {
   const entry = habit.log[partner.id]?.[today]
   const done = entry?.status === 'done'
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-line/10 bg-card/50 p-3.5">
+    <div className="flex items-center gap-3 rounded-tile border border-line/10 bg-card/50 p-3.5">
       <Avatar user={partner} size="sm" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{habit.title}</p>
         <p className="text-xs text-muted">{scheduleLabel(habit)}</p>
       </div>
-      <span className={cn('text-xs font-semibold', done ? 'text-accent' : 'text-muted')}>{done ? `Done ${formatTime(entry.at!)}` : 'Not yet'}</span>
+      <span className={cn('text-xs font-semibold', done ? 'text-partner' : 'text-muted')}>{done ? `Done ${formatTime(entry.at!)}` : 'Not yet'}</span>
     </div>
   )
 }

@@ -1,4 +1,5 @@
-import '@fontsource-variable/outfit'
+import '@fontsource-variable/inter'
+import '@fontsource-variable/manrope'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/index.css'

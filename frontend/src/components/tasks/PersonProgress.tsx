@@ -61,7 +61,7 @@ function PersonCard({ user }: { user: User }) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className={cn('tile w-full p-3 text-left hover:bg-card/90 active:scale-[0.99]', open && 'border-accent/25')}
+        className={cn('tile lift min-h-11 w-full p-3 text-left active:scale-[0.99]', open && 'border-accent/30')}
       >
         <span className="flex items-center gap-3">
           <Avatar user={user} size="sm" />
@@ -74,7 +74,7 @@ function PersonCard({ user }: { user: User }) {
           <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted transition-transform duration-300', open && 'rotate-180')} aria-hidden="true" />
         </span>
         <span className="mt-2.5 block h-1 overflow-hidden rounded-full bg-line/15">
-          <span className={cn('block h-full rounded-full transition-all duration-700', user.tone === 'you' ? 'bg-accent/80' : 'bg-partner/80')} style={{ width: `${pct}%` }} />
+          <span className={cn('block h-full rounded-full transition-all duration-700', user.tone === 'you' ? 'bg-accent/80' : 'bg-accent2/80')} style={{ width: `${pct}%` }} />
         </span>
       </button>
 

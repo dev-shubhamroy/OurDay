@@ -18,7 +18,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="mb-6 flex items-center gap-3 px-2 pt-1">
         <BrandMark />
         <div className="leading-tight">
-          <p className="text-lg font-semibold tracking-tight">OurDay</p>
+          <p className="font-display text-xl font-bold tracking-tight">OurDay</p>
           <p className="text-[11px] text-muted">Plan together. Stay in sync.</p>
         </div>
       </div>
@@ -32,8 +32,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'group relative flex h-11 items-center gap-3 rounded-2xl px-3 text-sm font-medium transition duration-200',
-                isActive ? 'bg-accent/12 text-accent' : 'text-muted hover:bg-line/10 hover:text-fg',
+                'group relative flex h-11 items-center gap-3 rounded-ctl px-3 text-sm font-medium transition duration-200',
+                isActive ? 'bg-gradient-to-r from-accent/15 to-accent/5 text-accent' : 'text-muted hover:bg-line/10 hover:text-fg',
               )
             }
           >
@@ -51,7 +51,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         )
       })}
 
-      <div className="mt-auto rounded-2xl border border-line/10 bg-card/50 p-3">
+      <div className="mt-auto rounded-tile border border-line/10 bg-card/60 p-3">
         <div className="flex items-center gap-3">
           <div className="flex -space-x-1.5">
             {users.map((u) => (

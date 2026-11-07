@@ -129,7 +129,7 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
                     type="button"
                     aria-pressed={days.includes(d)}
                     onClick={() => toggleDay(d)}
-                    className={cn('h-10 flex-1 rounded-xl border text-xs font-semibold transition', days.includes(d) ? 'border-accent/50 bg-accent/15 text-accent' : 'border-line/15 text-muted hover:text-fg')}
+                    className={cn('h-11 flex-1 rounded-ctl border text-xs font-semibold transition', days.includes(d) ? 'border-accent/50 bg-accent/15 text-accent' : 'border-line/15 text-muted hover:text-fg')}
                   >
                     {dayName(d)}
                   </button>

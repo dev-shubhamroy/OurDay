@@ -23,9 +23,26 @@
 - Real macOS/Android unlock detection is out of scope for now; the briefing is shown on the first app open of each local day and can be replayed from Settings.
 
 ## 4. UI / UX decisions
-- Dark (`bg #080D18`, surface `#111B2B`, card `#18283D`, accent `#27C8FF`) and light (`bg #F5F8FC`, surface `#FFFFFF`, card `#EAF1F9`, accent `#168DCE`) themes, plus "system".
-- Geometric sans (Outfit), subtle gradients, restrained glow, rounded layered cards, translucent sidebar, glass floating panels, Lucide icons only.
-- Warmth: a soft coral tone identifies the partner; accent cyan identifies "you".
+- **Design system: Midnight Aurora** — immersive, premium, soft-rounded; dark and light themes are equal in quality, plus "system". All colours are CSS variables in `frontend/src/styles/index.css` (RGB channels) mapped to Tailwind names in `tailwind.config.ts`; components never hardcode colours.
+
+  | Token (Tailwind) | Dark | Light |
+  |---|---|---|
+  | Background (`bg`) | `#080D18` | `#F4F7FC` |
+  | Sidebar (`sidebar`) | `#0D1727` | `#FFFFFF` |
+  | Surface (`surface`) | `#111F33` | `#FFFFFF` |
+  | Elevated surface (`card`) | `#192B43` | `#E3ECF8` |
+  | Primary accent (`accent`) | `#27C8FF` | `#168DCE` |
+  | Secondary accent (`accent2`, violet) | `#7775FF` | `#7165D9` |
+  | Electric blue (`electric`) | `#4D9FFF` | `#367DD1` |
+  | Soft glow (`glow`) | `#A9DFFF` | `#DCEFFF` |
+
+  Semantic colours (same hues in both themes, tuned for contrast): completed = green (`ok`), approaching = amber (`warn`), critical = red (`danger`), partner activity = cyan/blue (`partner`, = electric), neutral = muted grey. Partner identity (avatar, partner badge, partner progress bar) uses the violet secondary accent; "you" uses the primary accent.
+- **Typography:** Manrope for headings and display (h1–h3, brand), Inter for body and UI, both self-hosted variable fonts via `@fontsource-variable`. Tabular numerals are on globally so times, countdowns and counts don't jitter. Scale: page headings 30–36px, section headings 20px, card headings 15–17px, body 14–15px, metadata 11–13px.
+- **Atmosphere:** static ambient gradients only: faint cyan upper-right and violet lower-left on a fixed layer (no motion, no particles).
+- **Surfaces:** radii: main surfaces 20px (`rounded-card`), tiles/rows 16px (`rounded-tile`), controls 14px (`rounded-ctl`), inputs 12px. 1px low-contrast borders and layered soft shadows (`shadow-card`, `shadow-lift`, `shadow-float`). Most task/habit cards are solid; glass is used only for the sidebar, top bar, floating RANA panel and modals.
+- **Controls:** shared `Button` (primary / soft = secondary / ghost = quiet), `IconButton`, `Segmented` (tabs), `Switch`, `CheckButton`, form fields, badges. Touch targets are at least 44px (small visual controls such as check circles and switches get a 44px hit area). Known exception: habit calendar day cells are about 41px on 375px screens to fit seven columns. Focus rings, disabled states and press feedback are consistent.
+- **Motion:** page fade (200ms), card hover elevation (pointer devices), completion pop, Together expand/collapse, gentle RANA float; most transitions 150–300ms; nothing loops except RANA's idle float; `prefers-reduced-motion` disables animation.
+- Lucide icons only. Warmth comes from the violet partner accent and soft geometry.
 - No space/planet imagery, no heavy neon, no chat UI.
 - Responsive: persistent sidebar on desktop, slide-over drawer on mobile.
 - **Time display: 12-hour with AM/PM everywhere** (e.g. `2:25 PM`, `9:30 AM`, `12:00 AM` at midnight, `12:00 PM` at noon), regardless of the device locale. This covers deadline and task times, countdown timestamps, completion times, Upcoming, Past / Missed, Completed, habit calendar details, RANA's briefing and the Add Task modal. Time entry uses a 12-hour picker (hour, minute and a separate AM/PM choice). It is a display and input convention only: stored values stay 24-hour `HH:mm` or ISO timestamps, calculations and time-zone handling are unchanged, and the planned 9:30 PM habit check-in is unchanged. Formatting lives in `services/dates.ts`; entry in `components/ui/TimePicker.tsx`. Dates still follow the device's date format.

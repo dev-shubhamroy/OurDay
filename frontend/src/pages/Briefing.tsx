@@ -28,7 +28,7 @@ export default function Briefing() {
         <section className="flex flex-col items-center text-center lg:items-start lg:text-left">
           <p className="eyebrow mb-4">{formatLongDate(now)} · Daily briefing</p>
           <RanaRobot mood="greet" className="h-52 w-52 sm:h-64 sm:w-64" />
-          <div className="glass relative mt-4 w-full rounded-3xl p-5 shadow-float lg:mt-6">
+          <div className="glass relative mt-4 w-full rounded-card p-5 shadow-float lg:mt-6">
             <p className="eyebrow mb-2 text-accent">RANA</p>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl animate-rise">{b.greeting}</h1>
             <div className="mt-3 space-y-2 text-[15px] leading-relaxed text-fg/90">

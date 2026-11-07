@@ -9,7 +9,7 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={cn('relative h-7 w-12 shrink-0 rounded-full border transition duration-200', checked ? 'border-accent/40 bg-accent shadow-glow' : 'border-line/20 bg-line/15')}
+      className={cn('hit-44 relative h-7 w-12 shrink-0 rounded-full border transition duration-200', checked ? 'border-accent/40 bg-accent shadow-glow' : 'border-line/20 bg-line/15')}
     >
       <span className={cn('absolute top-0.5 h-5.5 w-5.5 rounded-full bg-white shadow transition-all duration-200', checked ? 'left-[22px]' : 'left-0.5')} style={{ height: 22, width: 22 }} />
     </button>
@@ -18,7 +18,7 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
 
 export function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: string; icon?: ReactNode }[]; onChange: (v: T) => void; label: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex gap-1 rounded-2xl border border-line/10 bg-line/10 p-1">
+    <div role="radiogroup" aria-label={label} className="flex gap-1 rounded-ctl border border-line/10 bg-line/10 p-1">
       {options.map((o) => (
         <button
           key={o.value}
@@ -26,7 +26,7 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
           role="radio"
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
-          className={cn('flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-medium transition duration-200', value === o.value ? 'bg-surface text-accent shadow-card' : 'text-muted hover:text-fg')}
+          className={cn('flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-sm font-medium transition duration-200', value === o.value ? 'bg-surface text-accent shadow-card' : 'text-muted hover:text-fg')}
         >
           {o.icon}
           {o.label}

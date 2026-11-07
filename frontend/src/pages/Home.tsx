@@ -32,7 +32,7 @@ export default function Home() {
           </section>
 
           <section className="animate-rise" style={{ animationDelay: '.12s' }}>
-            <SectionHeader icon={<ArrowRight className="h-4 w-4" />} title="Coming up" meta={<Link to="/upcoming" className="text-accent hover:underline">See all</Link>} />
+            <SectionHeader icon={<ArrowRight className="h-4 w-4" />} title="Coming up" meta={<Link to="/upcoming" className="hit-44 text-accent hover:underline">See all</Link>} />
             <div className="space-y-2.5">
               {ahead.length === 0 ? (
                 <EmptyState icon={<ArrowRight className="h-6 w-6" />} title="Nothing scheduled ahead" />
@@ -56,7 +56,7 @@ export default function Home() {
               </p>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-line/15">
-              <div className="h-full rounded-full bg-gradient-to-r from-accent via-accent to-partner transition-all duration-700" style={{ width: `${total ? (together / total) * 100 : 0}%` }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-accent via-accent to-accent2 transition-all duration-700" style={{ width: `${total ? (together / total) * 100 : 0}%` }} />
             </div>
             <PersonProgress />
           </section>

@@ -16,7 +16,7 @@ export function ScopeBadge({ scope, className }: { scope: HabitScope; className?
     <span
       className={cn(
         'inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold',
-        scope === 'shared' ? 'border-accent/25 bg-accent/10 text-accent' : scope === 'partner' ? 'border-partner/30 bg-partner/10 text-partner' : 'border-line/15 bg-line/10 text-muted',
+        scope === 'shared' ? 'border-accent/25 bg-accent/10 text-accent' : scope === 'partner' ? 'border-accent2/30 bg-accent2/10 text-accent2' : 'border-line/15 bg-line/10 text-muted',
         className,
       )}
     >
@@ -33,7 +33,7 @@ export function HabitCard({ habit }: { habit: Habit }) {
   const people = [...habit.participants].sort((a) => (a === me.id ? -1 : 1))
 
   return (
-    <article className={cn('panel flex flex-col gap-4 p-4 sm:gap-5 sm:p-5 transition duration-300', habit.paused && 'opacity-60')}>
+    <article className={cn('panel lift flex flex-col gap-4 p-4 sm:gap-5 sm:p-5', habit.paused && 'opacity-60')}>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="flex items-center gap-2 text-lg font-semibold">
