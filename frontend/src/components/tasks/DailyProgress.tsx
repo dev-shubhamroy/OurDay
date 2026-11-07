@@ -1,60 +1,41 @@
 import { useApp } from '../../hooks/useApp'
-import { habitProgress, taskProgress } from '../../services/selectors'
-import { ProgressRing } from '../ui/ProgressRing'
+import { habitProgress, taskProgress, type Progress } from '../../services/selectors'
+import { cn } from '../ui/cn'
 
-/** Dynamic daily progress: "3 of 6 tasks completed". */
-export function DailyProgressCard() {
-  const { tasks, habits, now, me } = useApp()
-  const t = taskProgress(tasks, now)
-  const h = habitProgress(habits, now, me.id)
+function Meter({ label, p, className }: { label: string; p: Progress; className?: string }) {
   return (
-    <div className="panel relative overflow-hidden p-5">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-accent/10 blur-3xl" />
-      <p className="eyebrow mb-3">Daily progress</p>
-      <div className="flex items-center gap-5">
-        <ProgressRing pct={t.pct} size={104}>
-          <span className="text-2xl font-semibold tabular-nums">{t.pct}%</span>
-        </ProgressRing>
-        <div className="min-w-0">
-          <p className="text-lg font-semibold leading-snug" aria-live="polite">
-            {t.done} of {t.total} tasks completed
-          </p>
-          <p className="mt-1 text-sm text-muted">
-            {t.total > 0 && t.done === t.total ? 'All clear — nicely done.' : `${t.total - t.done} to go today`}
-          </p>
-        </div>
+    <div className={className}>
+      <div className="mb-1 flex items-baseline justify-between text-xs">
+        <span className="text-muted">{label}</span>
+        <span className="font-medium tabular-nums text-fg/80">
+          {p.done}/{p.total}
+        </span>
       </div>
-      {h.total > 0 && (
-        <div className="mt-5">
-          <div className="mb-1.5 flex justify-between text-xs text-muted">
-            <span>Habits</span>
-            <span className="tabular-nums">
-              {h.done} of {h.total}
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-line/15">
-            <div className="h-full rounded-full bg-gradient-to-r from-accent to-ok transition-all duration-700" style={{ width: `${h.pct}%` }} />
-          </div>
-        </div>
-      )}
+      <div className="h-1 overflow-hidden rounded-full bg-line/15">
+        <div className={cn('h-full rounded-full transition-all duration-700', p.pct >= 100 ? 'bg-ok' : 'bg-accent/80')} style={{ width: `${p.pct}%` }} />
+      </div>
     </div>
   )
 }
 
-export function ProgressStrip() {
-  const { tasks, now } = useApp()
+/** Compact, secondary daily progress: a glanceable widget, not a feature. */
+export function DailyProgressCard({ className }: { className?: string }) {
+  const { tasks, habits, now, me } = useApp()
   const t = taskProgress(tasks, now)
+  const h = habitProgress(habits, now, me.id)
   return (
-    <div className="panel p-4">
-      <div className="mb-2 flex items-baseline justify-between">
-        <p className="text-sm font-semibold" aria-live="polite">
-          {t.done} of {t.total} tasks completed
-        </p>
-        <span className="text-xs tabular-nums text-muted">{t.pct}%</span>
+    <div className={cn('rounded-2xl border border-line/10 bg-card/40 p-3.5', className)}>
+      <p className="mb-2.5 flex items-baseline justify-between">
+        <span className="eyebrow">Daily progress</span>
+        <span className="text-[11px] tabular-nums text-muted">{t.pct}%</span>
+      </p>
+      <div className="space-y-2.5">
+        <Meter label="Tasks" p={t} />
+        {h.total > 0 && <Meter label="Habits" p={h} />}
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-line/15">
-        <div className="h-full rounded-full bg-gradient-to-r from-accent to-ok transition-all duration-700" style={{ width: `${t.pct}%` }} />
-      </div>
+      <span className="sr-only" aria-live="polite">
+        {t.done} of {t.total} tasks completed
+      </span>
     </div>
   )
 }

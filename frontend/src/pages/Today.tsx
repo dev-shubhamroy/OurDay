@@ -1,6 +1,6 @@
 import { CalendarCheck, Flag, ListChecks, PartyPopper, Repeat } from 'lucide-react'
 import { HabitRow, PartnerHabitRow } from '../components/habits/HabitRow'
-import { DailyProgressCard, ProgressStrip } from '../components/tasks/DailyProgress'
+import { DailyProgressCard } from '../components/tasks/DailyProgress'
 import { DeadlineCard } from '../components/tasks/DeadlineCard'
 import { TaskCard } from '../components/tasks/TaskCard'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -19,9 +19,6 @@ export default function Today() {
   return (
     <>
       <PageHeader eyebrow={formatLongDate(now)} title="Today" subtitle="Deadlines first, then the rest of your day." />
-      <div className="mb-6 lg:hidden">
-        <ProgressStrip />
-      </div>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-8">
           <section aria-label="Today's deadlines" className="animate-rise">
@@ -39,10 +36,9 @@ export default function Today() {
           </section>
         </div>
 
-        <aside className="space-y-8">
-          <div className="hidden lg:block">
-            <DailyProgressCard />
-          </div>
+        <aside className="flex flex-col gap-8">
+          {/* Secondary widget: after the habits on mobile, top of the side column on desktop. */}
+          <DailyProgressCard className="order-last lg:order-first" />
           <section aria-label="Today's habits" className="animate-rise" style={{ animationDelay: '.16s' }}>
             <SectionHeader icon={<Repeat className="h-4 w-4" />} title="Habits" />
             <div className="space-y-2.5">

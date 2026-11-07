@@ -4,16 +4,15 @@ import { DeadlineCard } from '../components/tasks/DeadlineCard'
 import { TaskRow } from '../components/tasks/TaskRow'
 import { Avatar } from '../components/ui/Avatar'
 import { PageHeader } from '../components/ui/PageHeader'
-import { ProgressRing } from '../components/ui/ProgressRing'
+import { DailyProgressCard } from '../components/tasks/DailyProgress'
 import { EmptyState, SectionHeader } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
 import { formatLongDate, formatTime, greetingFor } from '../services/dates'
-import { habitOccurrencesToday, habitProgress, taskProgress, todayActivity, todayDeadlines, upcomingTasks } from '../services/selectors'
+import { habitOccurrencesToday, taskProgress, todayActivity, todayDeadlines, upcomingTasks } from '../services/selectors'
 
 export default function Home() {
   const { tasks, habits, now, today, me, users, userById } = useApp()
   const t = taskProgress(tasks, now)
-  const h = habitProgress(habits, now, me.id)
   const occ = habitOccurrencesToday(habits, now)
   const next = todayDeadlines(tasks, now).find((d) => d.status === 'open')
   const activity = todayActivity(tasks, habits, now)
@@ -26,26 +25,6 @@ export default function Home() {
       <PageHeader eyebrow={formatLongDate(now)} title={`${greetingFor(now)}, ${me.name}`} subtitle="Here’s how today is shaping up for both of you." />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="space-y-6">
-          <section className="panel relative animate-rise overflow-hidden p-6">
-            <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
-            <div className="relative flex flex-col items-center gap-6 sm:flex-row">
-              <ProgressRing pct={t.pct} size={132} stroke={11}>
-                <div className="text-center">
-                  <p className="text-3xl font-semibold tabular-nums">{t.pct}%</p>
-                  <p className="text-[11px] text-muted">of today</p>
-                </div>
-              </ProgressRing>
-              <div className="flex-1 text-center sm:text-left">
-                <p className="eyebrow mb-1.5">Daily progress</p>
-                <p className="text-2xl font-semibold tracking-tight" aria-live="polite">{t.done} of {t.total} tasks completed</p>
-                <p className="mt-1 text-sm text-muted">{h.done} of {h.total} habits done · {t.total - t.done} tasks to go</p>
-                <Link to="/today" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent hover:underline">
-                  Open Today <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </section>
-
           <section className="animate-rise" style={{ animationDelay: '.06s' }}>
             <SectionHeader icon={<Flag className="h-4 w-4" />} title="Next deadline" />
             {next ? <DeadlineCard task={next} /> : <EmptyState icon={<Flag className="h-6 w-6" />} title="No deadlines pressing today" />}
@@ -64,6 +43,7 @@ export default function Home() {
         </div>
 
         <div className="space-y-6">
+          <DailyProgressCard />
           <section className="panel animate-rise p-5" style={{ animationDelay: '.04s' }}>
             <SectionHeader icon={<Users className="h-4 w-4" />} title="Together" />
             <div className="mb-4 flex items-center gap-3">
