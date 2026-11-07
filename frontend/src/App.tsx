@@ -1,10 +1,23 @@
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AppShell } from './components/layout/AppShell'
+import { NAV_ITEMS } from './components/layout/nav'
+import Placeholder from './pages/Placeholder'
+import { ThemeProvider } from './store/theme'
+
 export default function App() {
   return (
-    <main className="app-backdrop relative grid min-h-screen place-items-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-semibold tracking-tight">OurDay</h1>
-        <p className="mt-2 text-muted">Plan together. Stay in sync.</p>
-      </div>
-    </main>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route index element={<Navigate to="/home" replace />} />
+            {NAV_ITEMS.map((n) => (
+              <Route key={n.to} path={n.to} element={<Placeholder title={n.label} />} />
+            ))}
+            <Route path="*" element={<Navigate to="/home" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
