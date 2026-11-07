@@ -21,7 +21,7 @@ export default function Today() {
       <div className="mb-6 lg:hidden">
         <ProgressStrip />
       </div>
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-8">
           <section aria-label="Today's deadlines" className="animate-rise">
             <SectionHeader icon={<Flag className="h-4 w-4" />} title="Deadlines" meta={`${deadlines.filter((d) => d.status === 'completed').length}/${deadlines.length} done`} />

@@ -1,9 +1,18 @@
 import { NavLink } from 'react-router-dom'
+import { useApp } from '../../hooks/useApp'
+import { futureDeadlines, taskProgress, todayDeadlines } from '../../services/selectors'
+import { Avatar } from '../ui/Avatar'
 import { BrandMark } from '../ui/RanaMark'
 import { cn } from '../ui/cn'
 import { NAV_ITEMS } from './nav'
 
-export function Sidebar({ onNavigate, badges = {} }: { onNavigate?: () => void; badges?: Record<string, number | undefined> }) {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const { tasks, now, users } = useApp()
+  const p = taskProgress(tasks, now)
+  const badges: Record<string, number | undefined> = {
+    '/today': p.total - p.done,
+    '/deadlines': todayDeadlines(tasks, now).filter((t) => t.status === 'open').length + futureDeadlines(tasks, now).length,
+  }
   return (
     <nav aria-label="Primary" className="flex h-full flex-col gap-1 p-4">
       <div className="mb-6 flex items-center gap-3 px-2 pt-1">
@@ -42,7 +51,21 @@ export function Sidebar({ onNavigate, badges = {} }: { onNavigate?: () => void; 
         )
       })}
 
-      <div className="mt-auto" />
+      <div className="mt-auto rounded-2xl border border-line/10 bg-card/50 p-3">
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-2">
+            {users.map((u) => (
+              <Avatar key={u.id} user={u} size="sm" />
+            ))}
+          </div>
+          <div className="leading-tight">
+            <p className="text-sm font-medium">{users.map((u) => u.name).join(' & ')}</p>
+            <p className="flex items-center gap-1.5 text-[11px] text-muted">
+              <span className="h-1.5 w-1.5 rounded-full bg-ok" /> In sync
+            </p>
+          </div>
+        </div>
+      </div>
     </nav>
   )
 }
