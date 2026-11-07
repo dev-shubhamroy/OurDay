@@ -18,7 +18,7 @@
 ## 3. RANA
 - Friendly floating robotic companion: black metallic body, glowing blue expressive eyes, machine-like (never human), subtle float, small eye movements, restrained greeting/acknowledgement animations.
 - **First screen of each day** is RANA's daily briefing, in this order: (1) today's deadlines by urgency, (2) today's daily tasks, (3) today's habits (separate section). Ends with a **Let's get started** action that opens the workspace.
-- Also appears as a small floating companion in the workspace.
+- Also appears as a small floating companion in the workspace (bottom-right). While the page is scrolling it fades back so it never covers row details, and returns when scrolling stops.
 - **Not a chatbot.** No chat input/history, no AI-generated advice, no AI prioritisation, no LLM or paid AI API. Output is generated deterministically from task data (`services/rana.ts`).
 - Real macOS/Android unlock detection is out of scope for now; the briefing is shown on the first app open of each local day and can be replayed from Settings.
 

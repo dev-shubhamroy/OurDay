@@ -13,6 +13,21 @@ export function FloatingRana() {
   const [mood, setMood] = useState<RanaMood>('idle')
   const [ack, setAck] = useState<string | null>(null)
   const last = useRef(pulse)
+  // While the page scrolls, RANA fades back so it never covers row details; it returns when scrolling stops.
+  const [scrolling, setScrolling] = useState(false)
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined
+    const onScroll = () => {
+      setScrolling(true)
+      clearTimeout(t)
+      t = setTimeout(() => setScrolling(false), 450)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      clearTimeout(t)
+    }
+  }, [])
 
   useEffect(() => {
     if (pulse === last.current) return
@@ -58,7 +73,7 @@ export function FloatingRana() {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? 'Hide RANA' : 'Show RANA'}
         aria-expanded={open}
-        className="group pointer-events-auto relative grid h-16 w-16 place-items-center rounded-full sm:h-[76px] sm:w-[76px]"
+        className={`group pointer-events-auto relative grid h-16 w-16 place-items-center rounded-full transition-opacity duration-300 sm:h-[76px] sm:w-[76px] ${scrolling && !open ? 'opacity-25' : 'opacity-100'}`}
       >
         <span className="absolute inset-1.5 rounded-full bg-accent/20 animate-pulseRing" />
         <span className="glass absolute inset-1 rounded-full shadow-float transition group-hover:shadow-glow" />

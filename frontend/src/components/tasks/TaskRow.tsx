@@ -16,7 +16,7 @@ export function TaskRow({ kind, title, meta, owner, bell, right, muted, struck }
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className={cn('truncate text-[15px] font-medium', struck && 'text-muted line-through decoration-muted/60')}>{title}</p>
+        <p className={cn('line-clamp-2 text-[15px] font-medium leading-snug', struck && 'text-muted line-through decoration-muted/60')}>{title}</p>
         {meta && <p className="mt-0.5 text-xs text-muted">{meta}</p>}
       </div>
       {bell && <NotifyBell />}

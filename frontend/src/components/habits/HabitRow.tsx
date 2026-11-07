@@ -28,8 +28,9 @@ export function HabitRow({ habit }: { habit: Habit }) {
         <p className="text-xs text-muted">
           {done ? <span className="text-ok">You: done at {formatTime(entry.at!)}</span> : scheduleLabel(habit)}
           {isShared(habit) && (
-            <span className={cn('ml-2', partnerEntry?.status === 'done' ? 'text-accent' : '')}>
-              · {partner.name}: {partnerEntry?.status === 'done' ? `done ${formatTime(partnerEntry.at!)}` : 'not yet'}
+            <span className={cn('block sm:ml-2 sm:inline', partnerEntry?.status === 'done' ? 'text-accent' : '')}>
+              <span className="hidden sm:inline">· </span>
+              {partner.name}: {partnerEntry?.status === 'done' ? `done ${formatTime(partnerEntry.at!)}` : 'not yet'}
             </span>
           )}
         </p>
