@@ -4,6 +4,7 @@ import { formatClock, formatTime } from '../../services/dates'
 import type { Task } from '../../types'
 import { Avatar } from '../ui/Avatar'
 import { CheckButton } from '../ui/CheckButton'
+import { EditButton } from '../ui/EditButton'
 import { AuroraCard } from '../ui/AuroraCard'
 import { cn } from '../ui/cn'
 import { NotifyBell } from './NotifyBell'
@@ -30,6 +31,7 @@ export function TaskCard({ task }: { task: Task }) {
             )}
           </p>
         </div>
+        <EditButton target={{ type: 'task', id: task.id }} label={`Edit ${task.title}`} />
         {task.notifySecondUser && <NotifyBell />}
         <Avatar user={owner} size="xs" />
       </AuroraCard>

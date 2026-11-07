@@ -3,7 +3,7 @@ import { createSeed, ME, USERS } from '../data/mock'
 import { useNow } from '../hooks/useNow'
 import { toKey } from '../services/dates'
 import type { Habit, Task } from '../types'
-import { AppContext, type NewHabitInput, type NewTaskInput } from './appContext'
+import { AppContext, type NewHabitInput, type NewTaskInput, type SyncInfo, type UpdateHabitInput, type UpdateTaskInput } from './appContext'
 
 interface State {
   tasks: Task[]
@@ -17,6 +17,11 @@ type Action =
   | { type: 'pauseHabit'; id: string; paused: boolean }
   | { type: 'addTask'; task: Task }
   | { type: 'addHabit'; habit: Habit }
+  | { type: 'updateTask'; id: string; patch: UpdateTaskInput }
+  | { type: 'deleteTask'; id: string }
+  | { type: 'updateHabit'; id: string; patch: UpdateHabitInput }
+  | { type: 'deleteHabit'; id: string }
+  | { type: 'missHabit'; id: string; user: string; day: string }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -51,6 +56,19 @@ function reducer(state: State, action: Action): State {
       return { ...state, tasks: [...state.tasks, action.task] }
     case 'addHabit':
       return { ...state, habits: [...state.habits, action.habit] }
+    case 'updateTask':
+      return { ...state, tasks: state.tasks.map((t) => (t.id === action.id ? { ...t, ...action.patch, notes: action.patch.notes ?? t.notes } : t)) }
+    case 'deleteTask':
+      return { ...state, tasks: state.tasks.filter((t) => t.id !== action.id) }
+    case 'updateHabit':
+      return { ...state, habits: state.habits.map((h) => (h.id === action.id ? { ...h, ...action.patch } : h)) }
+    case 'deleteHabit':
+      return { ...state, habits: state.habits.filter((h) => h.id !== action.id) }
+    case 'missHabit':
+      return {
+        ...state,
+        habits: state.habits.map((h) => (h.id === action.id ? { ...h, log: { ...h.log, [action.user]: { ...(h.log[action.user] ?? {}), [action.day]: { status: 'missed' as const } } } } : h)),
+      }
   }
 }
 
@@ -81,6 +99,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const updateTask = useCallback((id: string, patch: UpdateTaskInput) => dispatch({ type: 'updateTask', id, patch }), [])
+  const deleteTask = useCallback((id: string) => dispatch({ type: 'deleteTask', id }), [])
+  const updateHabit = useCallback((id: string, patch: UpdateHabitInput) => dispatch({ type: 'updateHabit', id, patch }), [])
+  const deleteHabit = useCallback((id: string) => dispatch({ type: 'deleteHabit', id }), [])
+  const markHabitMissed = useCallback((id: string) => dispatch({ type: 'missHabit', id, user: ME, day: toKey(new Date()) }), [])
+  const sync = useMemo<SyncInfo>(() => ({ remote: false, state: 'idle', loading: false, loadError: null, actionError: null, retry: () => undefined }), [])
+
   const value = useMemo(() => {
     const me = USERS.find((u) => u.id === ME)!
     const partner = USERS.find((u) => u.id !== ME)!
@@ -99,8 +124,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setHabitPaused,
       addTask,
       addHabit,
+      updateTask,
+      deleteTask,
+      updateHabit,
+      deleteHabit,
+      markHabitMissed,
+      sync,
     }
-  }, [now, today, state, toggleTask, toggleHabit, setHabitPaused, addTask, addHabit])
+  }, [now, today, state, toggleTask, toggleHabit, setHabitPaused, addTask, addHabit, updateTask, deleteTask, updateHabit, deleteHabit, markHabitMissed, sync])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

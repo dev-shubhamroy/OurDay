@@ -248,13 +248,9 @@ create policy habit_logs_delete on public.habit_logs for delete to authenticated
   using (user_id = (select auth.uid()) and workspace_id = public.current_workspace_id());
 
 -- ---------------------------------------------------------------------------
--- Realtime: full old rows on update/delete, and publish the tables the app listens to.
--- (Realtime applies RLS to inserts/updates; the app also re-fetches on every event, so it never trusts payloads.)
+-- Realtime: publish the tables the app listens to. Replica identity stays DEFAULT on purpose, so DELETE events
+-- carry only the primary key (no row contents). The app re-fetches on every event and never trusts payloads.
 -- ---------------------------------------------------------------------------
-alter table public.tasks      replica identity full;
-alter table public.habits     replica identity full;
-alter table public.habit_logs replica identity full;
-
 do $$
 declare
   t text;

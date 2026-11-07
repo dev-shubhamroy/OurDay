@@ -1,7 +1,10 @@
 import { createContext, useContext } from 'react'
 
+export type EditTarget = { type: 'task' | 'habit'; id: string }
+
 export interface UiCtx {
   openAddTask: () => void
+  openEdit: (target: EditTarget) => void
   toast: (message: string) => void
 }
 

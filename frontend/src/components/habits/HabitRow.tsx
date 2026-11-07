@@ -8,6 +8,7 @@ import { Avatar } from '../ui/Avatar'
 import { AuroraCard } from '../ui/AuroraCard'
 import { CheckButton } from '../ui/CheckButton'
 import { cn } from '../ui/cn'
+import { EditButton } from '../ui/EditButton'
 import { ScopeBadge } from './HabitCard'
 
 /** Today row for a habit the current user takes part in. Completes only the user's own record. */
@@ -36,6 +37,7 @@ export function HabitRow({ habit }: { habit: Habit }) {
           )}
         </p>
       </div>
+      <EditButton target={{ type: 'habit', id: habit.id }} label={`Edit ${habit.title}`} />
       {habit.notifySecondUser && <NotifyBell />}
       {streak > 0 && (
         <span className="inline-flex items-center gap-1 rounded-full bg-warn/12 px-2 py-0.5 text-xs font-semibold text-warn" title={`Your ${streak}-day streak`}>

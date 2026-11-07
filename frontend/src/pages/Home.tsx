@@ -27,7 +27,7 @@ export default function Home() {
 
   return (
     <>
-      <PageHeader eyebrow={formatLongDate(now)} title={`${greetingFor(now)}, ${me.name}`} subtitle="Here’s how today is shaping up for both of you." />
+      <PageHeader eyebrow={formatLongDate(now)} title={`${greetingFor(now)}, ${me.name.split(' ')[0]}`} subtitle="Here’s how today is shaping up for both of you." />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <DeadlineGroups />

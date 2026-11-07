@@ -39,7 +39,7 @@ export function buildBriefing(tasks: Task[], habits: Habit[], now: Date, me: Use
 
   if (todays.length > 0) lines.push(`And ${numberWord(todays.length)} ${plural(todays.length, 'habit')} to keep your streaks going.`)
 
-  return { greeting: `${greetingFor(now)}, ${me.name}!`, lines, deadlines, tasks: daily, habits: todays }
+  return { greeting: `${greetingFor(now)}, ${me.name.split(' ')[0]}!`, lines, deadlines, tasks: daily, habits: todays }
 }
 
 /** One-line status for the floating companion. */

@@ -1,10 +1,13 @@
-import { Monitor, Moon, RotateCcw, Sun, User as UserIcon, Users } from 'lucide-react'
+import { LogOut, Monitor, Moon, RotateCcw, Sun, User as UserIcon, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
 import { Segmented } from '../components/ui/Controls'
 import { PageHeader } from '../components/ui/PageHeader'
+import { InvitePartner } from '../components/workspace/InvitePartner'
 import { useApp } from '../hooks/useApp'
+import { useAuth } from '../hooks/useAuth'
+import { useWorkspace } from '../hooks/useWorkspace'
 import { useTheme } from '../hooks/useTheme'
 import { resetBriefingSeen } from '../services/briefingSeen'
 import type { ReactNode } from 'react'
@@ -23,12 +26,14 @@ function Group({ icon, title, children }: { icon: ReactNode; title: string; chil
 
 export default function Settings() {
   const { preference, setPreference } = useTheme()
-  const { me, partner } = useApp()
+  const { me, partner, sync } = useApp()
+  const { user, signOut } = useAuth()
+  const ws = useWorkspace()
   const navigate = useNavigate()
 
   return (
     <>
-      <PageHeader eyebrow="Preferences" title="Settings" subtitle="Theme works now. Account features arrive with the backend phase." />
+      <PageHeader eyebrow="Preferences" title="Settings" subtitle="Appearance, your account and your shared workspace." />
       <div className="grid max-w-3xl gap-5">
         <Group icon={<Sun className="h-4 w-4" />} title="Appearance">
           <Segmented
@@ -46,21 +51,31 @@ export default function Settings() {
         <Group icon={<UserIcon className="h-4 w-4" />} title="Account">
           <div className="flex items-center gap-3">
             <Avatar user={me} />
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="font-medium">{me.name}</p>
-              <p className="text-sm text-muted">Signed in as a demo user · sign-in comes with Supabase</p>
+              <p className="truncate text-sm text-muted">{sync.remote ? (user?.email ?? '') : 'Local demo mode · sample data, nothing is saved'}</p>
             </div>
+            {sync.remote && (
+              <Button variant="ghost" size="sm" icon={<LogOut className="h-4 w-4" />} onClick={() => void signOut()}>
+                Sign out
+              </Button>
+            )}
           </div>
         </Group>
 
-        <Group icon={<Users className="h-4 w-4" />} title="Your partner">
+        <Group icon={<Users className="h-4 w-4" />} title={sync.remote && ws.workspace ? ws.workspace.name : 'Your partner'}>
           <div className="flex items-center gap-3">
             <Avatar user={partner} />
             <div>
-              <p className="font-medium">{partner.name}</p>
-              <p className="text-sm text-muted">Full access to all tasks. Notifications are controlled per task.</p>
+              <p className="font-medium">{partner.id === 'pending-partner' ? 'Waiting for your partner' : partner.name}</p>
+              <p className="text-sm text-muted">{partner.id === 'pending-partner' ? 'Invite them below to share tasks, deadlines and habits.' : 'Full access to all tasks. Notifications are controlled per task.'}</p>
             </div>
           </div>
+          {sync.remote && (
+            <div className="mt-4">
+              <InvitePartner />
+            </div>
+          )}
         </Group>
 
         <Group icon={<RotateCcw className="h-4 w-4" />} title="RANA">
@@ -77,7 +92,7 @@ export default function Settings() {
           </Button>
         </Group>
 
-        <p className="px-1 text-xs text-muted">OurDay · Phase 1 preview · all data on screen is sample data.</p>
+        <p className="px-1 text-xs text-muted">OurDay</p>
       </div>
     </>
   )

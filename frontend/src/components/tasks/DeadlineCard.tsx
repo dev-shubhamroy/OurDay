@@ -5,6 +5,7 @@ import { remainingMs, urgencyOf } from '../../services/urgency'
 import type { Task } from '../../types'
 import { Avatar } from '../ui/Avatar'
 import { CheckButton } from '../ui/CheckButton'
+import { EditButton } from '../ui/EditButton'
 import { AuroraCard } from '../ui/AuroraCard'
 import { cn } from '../ui/cn'
 import { NotifyBell } from './NotifyBell'
@@ -38,6 +39,7 @@ export function DeadlineCard({ task, subdued }: { task: Task; subdued?: boolean 
           </p>
           <div className="mt-2.5 flex items-center gap-2 sm:hidden">
             <UrgencyBadge urgency={urgency} />
+            <EditButton target={{ type: 'task', id: task.id }} label={`Edit ${task.title}`} />
             {task.notifySecondUser && <NotifyBell />}
             <Avatar user={owner} size="xs" />
           </div>
@@ -45,6 +47,7 @@ export function DeadlineCard({ task, subdued }: { task: Task; subdued?: boolean 
         <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
           <UrgencyBadge urgency={urgency} />
           <div className="flex items-center gap-2">
+            <EditButton target={{ type: 'task', id: task.id }} label={`Edit ${task.title}`} />
             {task.notifySecondUser && <NotifyBell />}
             <Avatar user={owner} size="xs" />
           </div>

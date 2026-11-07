@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
-import { CheckCircle2, Menu, Moon, Plus, Sun, X } from 'lucide-react'
+import { CheckCircle2, Menu, Moon, Plus, Sun, WifiOff, X } from 'lucide-react'
 import { useTheme } from '../../hooks/useTheme'
 import { BrandMark } from '../ui/RanaMark'
-import { UiContext } from '../../store/uiContext'
+import { useApp } from '../../hooks/useApp'
+import { UiContext, type EditTarget } from '../../store/uiContext'
+import { EditModal } from '../tasks/EditModal'
 import { AddTaskModal } from '../tasks/AddTaskModal'
 import { Button } from '../ui/Button'
 import { IconButton } from '../ui/IconButton'
@@ -15,6 +17,15 @@ export function AppShell() {
   const { resolved, toggle } = useTheme()
   const { pathname } = useLocation()
   const [addOpen, setAddOpen] = useState(false)
+  const [editing, setEditing] = useState<EditTarget | null>(null)
+  const { sync } = useApp()
+  const [dismissedError, setDismissedError] = useState(0)
+  const errId = sync.actionError?.id ?? 0
+  useEffect(() => {
+    if (!errId) return
+    const t = setTimeout(() => setDismissedError(errId), 5000)
+    return () => clearTimeout(t)
+  }, [errId])
   const [toast, setToastMsg] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const showToast = useCallback((m: string) => {
@@ -22,7 +33,7 @@ export function AppShell() {
     clearTimeout(timer.current)
     timer.current = setTimeout(() => setToastMsg(null), 2800)
   }, [])
-  const ui = useMemo(() => ({ openAddTask: () => setAddOpen(true), toast: showToast }), [showToast])
+  const ui = useMemo(() => ({ openAddTask: () => setAddOpen(true), openEdit: (t: EditTarget) => setEditing(t), toast: showToast }), [showToast])
 
   useEffect(() => {
     window.scrollTo({ top: 0 })
@@ -57,6 +68,11 @@ export function AppShell() {
             <span className="font-display hidden text-lg font-bold tracking-tight min-[360px]:inline">OurDay</span>
           </div>
           <div className="ml-auto flex items-center gap-2" id="topbar-actions">
+            {sync.remote && sync.state === 'offline' && (
+              <span role="status" className="hidden items-center gap-1.5 rounded-full border border-warn/30 bg-warn/10 px-3 py-1.5 text-xs font-semibold text-warn sm:inline-flex" title="Changes will sync when the connection returns">
+                <WifiOff className="h-3.5 w-3.5" /> Offline
+              </span>
+            )}
             <Button onClick={() => setAddOpen(true)} icon={<Plus className="h-[18px] w-[18px]" />} className="px-3.5 sm:px-5">
               <span className="hidden sm:inline">Add Task</span>
               <span className="sm:hidden">Add</span>
@@ -71,6 +87,17 @@ export function AppShell() {
         </main>
       </div>
       <FloatingRana />
+      <EditModal target={editing} onClose={() => setEditing(null)} />
+      {sync.remote && sync.state === 'offline' && (
+        <div role="status" className="fixed inset-x-0 top-16 z-20 bg-warn/15 px-4 py-1.5 text-center text-xs font-semibold text-warn sm:hidden">
+          <WifiOff className="mr-1 inline h-3.5 w-3.5" /> Offline — changes will sync when you’re back
+        </div>
+      )}
+      {sync.actionError && sync.actionError.id !== dismissedError && (
+        <div role="alert" className="glass fixed bottom-24 left-1/2 z-[60] w-[min(92vw,26rem)] -translate-x-1/2 animate-rise rounded-tile border-danger/30 px-4 py-3 text-sm font-medium text-danger shadow-float sm:bottom-8">
+          {sync.actionError.message}
+        </div>
+      )}
       <AddTaskModal open={addOpen} onClose={() => setAddOpen(false)} onAdded={showToast} />
       {toast && (
         <div role="status" className="glass fixed bottom-24 left-1/2 z-[60] flex -translate-x-1/2 animate-rise items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium shadow-float sm:bottom-8">

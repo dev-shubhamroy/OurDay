@@ -7,6 +7,7 @@ import { Avatar } from '../ui/Avatar'
 import { AuroraCard } from '../ui/AuroraCard'
 import { Button } from '../ui/Button'
 import { CheckButton } from '../ui/CheckButton'
+import { EditButton } from '../ui/EditButton'
 import { cn } from '../ui/cn'
 import { HabitCalendar } from './HabitCalendar'
 
@@ -47,6 +48,7 @@ export function HabitCard({ habit }: { habit: Habit }) {
             {habit.paused && <span>· Paused</span>}
           </p>
         </div>
+        <EditButton target={{ type: 'habit', id: habit.id }} label={`Edit ${habit.title}`} />
         {mine && !habit.paused && (
           <CheckButton checked={myDone} onToggle={() => toggleHabit(habit.id)} label={`${myDone ? 'Undo' : 'Mark done today'}: ${habit.title}`} />
         )}

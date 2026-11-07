@@ -9,14 +9,18 @@ you review it and run it yourself. It only creates new objects (it does not touc
 | `migrations/20261108100000_core_schema.sql` | `profiles`, `workspaces`, `workspace_members`, `workspace_invitations`, constraints, indexes, profile-on-signup trigger, two-member limit trigger |
 | `migrations/20261108100100_workspace_functions.sql` | `create_workspace`, `create_invitation`, `revoke_invitation`, `get_invitation_status`, `accept_invitation` + two helpers used by policies |
 | `migrations/20261108100200_rls_and_grants.sql` | Row Level Security, policies, minimum table/function privileges |
-| `tests/workspace_security.sql` | 49 PASS/FAIL checks; creates throw-away users and **rolls everything back** |
+| `migrations/20261108110000_tasks_habits.sql` | `tasks`, `habits`, `habit_logs`, guards, RLS, Realtime publication |
+| `tests/workspace_security.sql`, `tests/tasks_habits_security.sql` | 49 + 49 PASS/FAIL checks; create throw-away users and **roll everything back** |
+| `tests/local/` | `npm install && npm test` runs all migrations + tests in an in-memory Postgres (no keys needed) |
 | `rollback/rollback_workspace_auth.sql` | Destructive undo (drops these tables). Only if you want to start over |
 
 ## Apply (pick one)
 **A. SQL Editor (simplest):** Supabase Dashboard → SQL Editor → New query. Paste and run the three migration files **in order**.
 **B. Supabase CLI:** `supabase link --project-ref <ref>` then `supabase db push`. (CLI is not installed here; you only need it for this option.)
 
-Then run `tests/workspace_security.sql` the same way. You should see 49 rows, all `PASS`, and `failed = 0`.
+Then run `tests/workspace_security.sql` and `tests/tasks_habits_security.sql` the same way. Each should show 49 rows, all `PASS`, and `failed = 0`.
+
+**Realtime:** migration 4 adds the tables to the `supabase_realtime` publication. Check Dashboard → Database → Replication that `tasks`, `habits`, `habit_logs`, `workspace_members` and `profiles` are listed under `supabase_realtime`. If you applied an earlier version of migration 4, tell me — I'll write a small forward migration rather than editing it.
 If the test's first `insert into auth.users` errors in your project, tell me the message and I'll adapt it.
 
 ## What the schema guarantees (enforced by the database, not the UI)

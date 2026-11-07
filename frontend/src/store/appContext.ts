@@ -1,4 +1,5 @@
 import { createContext } from 'react'
+import type { SyncState } from '../lib/realtime'
 import type { DateKey, Habit, HabitSchedule, Task, User } from '../types'
 
 export interface NewTaskInput {
@@ -20,7 +21,32 @@ export interface NewHabitInput {
   shared: boolean
 }
 
+export type UpdateTaskInput = Partial<Pick<NewTaskInput, 'title' | 'notes' | 'date' | 'time' | 'dueAt' | 'notifySecondUser'>>
+
+export interface UpdateHabitInput {
+  title?: string
+  notes?: string
+  schedule?: HabitSchedule
+  notifySecondUser?: boolean
+  paused?: boolean
+}
+
+export interface SyncInfo {
+  /** False in local demo mode (mock data, nothing is saved). */
+  remote: boolean
+  /** live = realtime connected; polling = realtime unavailable, refreshing periodically; offline = server unreachable. */
+  state: SyncState | 'polling' | 'idle'
+  /** First load in progress. */
+  loading: boolean
+  /** First load failed (no data yet). */
+  loadError: string | null
+  /** The most recent failed save, for a toast. `id` changes on every new failure. */
+  actionError: { id: number; message: string } | null
+  retry: () => void
+}
+
 export interface AppCtx {
+  sync: SyncInfo
   users: User[]
   me: User
   partner: User
@@ -36,6 +62,12 @@ export interface AppCtx {
   setHabitPaused: (id: string, paused: boolean) => void
   addTask: (input: NewTaskInput) => void
   addHabit: (input: NewHabitInput) => void
+  updateTask: (id: string, patch: UpdateTaskInput) => void
+  deleteTask: (id: string) => void
+  updateHabit: (id: string, patch: UpdateHabitInput) => void
+  deleteHabit: (id: string) => void
+  /** Records the current user's "No" at the habit check-in. */
+  markHabitMissed: (id: string) => void
 }
 
 export const AppContext = createContext<AppCtx | null>(null)

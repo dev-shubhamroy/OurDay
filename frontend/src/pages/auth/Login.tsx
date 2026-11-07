@@ -1,16 +1,66 @@
-import { BrandMark } from '../../components/ui/RanaMark'
-import { AuroraCard } from '../../components/ui/AuroraCard'
+import { useState, type FormEvent } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { AuthLayout } from '../../components/auth/AuthLayout'
+import { FormMessage, PasswordField, Spinner, TextField } from '../../components/auth/FormParts'
+import { Button } from '../../components/ui/Button'
+import { useAuth } from '../../hooks/useAuth'
+import { isValidEmail } from '../../services/password'
 
-/** Placeholder for Milestone 1. The real sign-in screen arrives in Milestone 3. */
 export default function Login() {
+  const { signIn } = useAuth()
+  const location = useLocation()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (busy) return
+    if (!isValidEmail(email)) return setError('Please enter a valid email address.')
+    if (!password) return setError('Please enter your password.')
+    setError(null)
+    setBusy(true)
+    const r = await signIn(email, password)
+    // On success the auth listener flips the state and the route guard navigates onward.
+    if (r.error) {
+      setError(r.error)
+      setBusy(false)
+    }
+  }
+
   return (
-    <div className="app-backdrop grid min-h-dvh place-items-center px-4">
-      <AuroraCard variant="rana" large className="w-full max-w-sm p-6 text-center">
-        <BrandMark className="mx-auto mb-4 h-12 w-12" />
-        <h1 className="text-2xl font-bold">OurDay</h1>
-        <p className="mt-1 text-sm text-muted">Plan together. Stay in sync.</p>
-        <p className="mt-5 text-sm text-muted">Sign-in is being built in the next milestone.</p>
-      </AuroraCard>
-    </div>
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Sign in to your shared OurDay."
+      footer={
+        <>
+          New here?{' '}
+          <Link to="/register" state={location.state} className="font-semibold text-accent hover:underline">
+            Create an account
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        {error && <FormMessage tone="error">{error}</FormMessage>}
+        <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" placeholder="you@example.com" />
+        <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="current-password" />
+        <div className="flex justify-end">
+          <Link to="/forgot-password" className="text-sm font-medium text-accent hover:underline">
+            Forgot password?
+          </Link>
+        </div>
+        <Button type="submit" size="lg" className="w-full" disabled={busy}>
+          {busy ? (
+            <>
+              <Spinner /> Signing in…
+            </>
+          ) : (
+            'Sign in'
+          )}
+        </Button>
+      </form>
+    </AuthLayout>
   )
 }

@@ -1,4 +1,5 @@
 import { CalendarCheck, Flag, ListChecks, PartyPopper, Repeat } from 'lucide-react'
+import { HabitCheckIn } from '../components/habits/HabitCheckIn'
 import { HabitRow, PartnerHabitRow } from '../components/habits/HabitRow'
 import { DailyProgressCard } from '../components/tasks/DailyProgress'
 import { DeadlineCard } from '../components/tasks/DeadlineCard'
@@ -19,6 +20,7 @@ export default function Today() {
   return (
     <>
       <PageHeader eyebrow={formatLongDate(now)} title="Today" subtitle="Deadlines first, then the rest of your day." />
+      <HabitCheckIn />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-8">
           <section aria-label="Today's deadlines" className="animate-rise">
