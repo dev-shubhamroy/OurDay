@@ -181,12 +181,14 @@ Decision: keep the undocumented notifications as the primary signal and add a 2 
 |---|---|
 | Real lock → unlock opens exactly one briefing (earlier test, log `[system]`) | REAL, passed |
 | Launch at login registered via `SMAppService.mainApp` (appears in Background Task Management as enabled, path `~/Applications`) | REAL, passed |
-| Launch after an actual logout/restart | USER, pending |
-| Toggle OFF → lock/unlock shows nothing, app and monitor keep running; toggle ON → next unlock shows exactly one window | INJECTED, passed (menu click itself: USER, pending) |
-| Rapid cycles: 8 lock/unlock pairs 0.2 s apart → 0 extra windows (gate ignores unlocks within 5 s) | INJECTED, passed; real rapid cycling: USER, pending |
+| Launch after an actual logout/restart | User-reported working; **not confirmed in the log** (app process was never restarted during the logged session) |
+| Toggle OFF → lock/unlock shows nothing, app and monitor keep running; toggle ON → next unlock shows exactly one window | INJECTED, passed (real menu click: user-reported working; the log shows only one real unlock cycle, with the toggle on) |
+| Rapid cycles: 8 lock/unlock pairs 0.2 s apart → 0 extra windows (gate ignores unlocks within 5 s) | INJECTED, passed; real rapid cycling: user-reported, not in the log |
 | Appearance: dark (current system setting) and light render correctly | dark REAL; light INJECTED (app appearance forced, not the system setting) |
 | Date: unlock after a past `lastBriefingDay` → full; next unlock → update; survives app restart | INJECTED, passed; midnight rollover logic also unit-tested for Asia/Kolkata (18/18 core tests) |
-| Sleep → wake → unlock | USER, pending |
+| Sleep → wake → unlock | User-reported working; no sleep/wake lines in the log, so not independently verified |
+| Real lock → unlock after adding the 2 s poll: one window; poll saw the same transition and the gate ignored the duplicate | REAL, passed (log) |
+| Real Light/Dark system switch | User-reported, not independently verified |
 | Dashboard sign-in inside the web view | not tested |
 Known limit: an unlock suppressed by the toggle does not count as the day's first briefing, so the first unlock after re-enabling is still "full".
 
