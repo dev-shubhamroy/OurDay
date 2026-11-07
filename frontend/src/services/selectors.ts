@@ -126,3 +126,40 @@ export function todayActivity(tasks: Task[], habits: Habit[], now: Date): Comple
   )
   return [...t, ...h].sort((a, b) => b.completedAt.localeCompare(a.completedAt))
 }
+
+export interface DayItem {
+  id: string
+  title: string
+  kind: 'daily' | 'deadline' | 'habit'
+  done: boolean
+  /** ISO completion time, when done. */
+  at?: string
+  shared?: boolean
+}
+
+/**
+ * One person's items for today, counted independently.
+ * - Tasks have a single completion record: an open task belongs to its creator, a completed one to whoever
+ *   completed it, so no task is ever counted twice. Only today's active items count (no future tasks,
+ *   no expired deadlines).
+ * - Habits use per-user logs: a shared habit yields one occurrence per participant; a personal habit only
+ *   its owner's. Paused habits and unscheduled days are excluded.
+ */
+export function personDay(tasks: Task[], habits: Habit[], now: Date, user: UserId): { done: DayItem[]; remaining: DayItem[] } {
+  const today = toKey(now)
+  const items: DayItem[] = []
+  for (const t of [...todayDeadlines(tasks, now), ...todayDaily(tasks, now)]) {
+    const owner = t.status === 'completed' ? (t.completedBy ?? t.createdBy) : t.createdBy
+    if (owner !== user) continue
+    items.push({ id: t.id, title: t.title, kind: t.kind, done: t.status === 'completed', at: t.completedAt })
+  }
+  for (const h of habits) {
+    if (h.paused || !isScheduled(h, today) || today < h.startDate || !participates(h, user)) continue
+    const e = h.log[user]?.[today]
+    items.push({ id: `${h.id}:${user}`, title: h.title, kind: 'habit', done: e?.status === 'done', at: e?.at, shared: isShared(h) })
+  }
+  return {
+    done: items.filter((i) => i.done).sort((a, b) => (b.at ?? '').localeCompare(a.at ?? '')),
+    remaining: items.filter((i) => !i.done),
+  }
+}

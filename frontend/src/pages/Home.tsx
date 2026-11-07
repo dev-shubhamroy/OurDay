@@ -1,6 +1,7 @@
 import { ArrowRight, Flag, Repeat, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { DeadlineCard } from '../components/tasks/DeadlineCard'
+import { PersonProgress } from '../components/tasks/PersonProgress'
 import { TaskRow } from '../components/tasks/TaskRow'
 import { Avatar } from '../components/ui/Avatar'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -57,14 +58,7 @@ export default function Home() {
             <div className="h-2 overflow-hidden rounded-full bg-line/15">
               <div className="h-full rounded-full bg-gradient-to-r from-accent via-accent to-partner transition-all duration-700" style={{ width: `${total ? (together / total) * 100 : 0}%` }} />
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {users.map((u) => (
-                <div key={u.id} className="tile p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs text-muted"><Avatar user={u} size="xs" />{u.name}</p>
-                  <p className="text-xl font-semibold tabular-nums">{activity.filter((a) => a.completedBy === u.id).length}<span className="ml-1 text-xs font-normal text-muted">done</span></p>
-                </div>
-              ))}
-            </div>
+            <PersonProgress />
           </section>
 
           <section className="animate-rise" style={{ animationDelay: '.1s' }}>
