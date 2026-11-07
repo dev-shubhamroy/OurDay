@@ -11,7 +11,7 @@ import { NotifyBell } from './NotifyBell'
 import { SwipeRow } from './SwipeRow'
 import { UrgencyBadge } from './UrgencyBadge'
 
-export function DeadlineCard({ task }: { task: Task }) {
+export function DeadlineCard({ task, subdued }: { task: Task; subdued?: boolean }) {
   const { now, today, toggleTask, userById } = useApp()
   const urgency = urgencyOf(task, now)
   const done = task.status === 'completed'
@@ -19,10 +19,10 @@ export function DeadlineCard({ task }: { task: Task }) {
 
   return (
     <SwipeRow onComplete={() => toggleTask(task.id)} disabled={done} radius="rounded-card">
-      <AuroraCard variant="deadline" as="article" tone={urgency} completed={done} className="flex items-center gap-3 p-4 pl-5 sm:gap-4 sm:p-5 sm:pl-7">
+      <AuroraCard variant="deadline" as="article" tone={urgency} completed={done} subdued={subdued} className="flex items-center gap-3 p-4 pl-5 sm:gap-4 sm:p-5 sm:pl-7">
         <CheckButton checked={done} onToggle={() => toggleTask(task.id)} label={`${done ? 'Mark incomplete' : 'Mark complete'}: ${task.title}`} />
         <div className="min-w-0 flex-1">
-          <h3 className={cn('line-clamp-2 text-base font-bold leading-snug sm:text-[17px]', done && 'text-muted line-through decoration-muted/60')}>{task.title}</h3>
+          <h3 className={cn('line-clamp-2 text-base font-bold leading-snug', subdued ? 'sm:text-[16px]' : 'sm:text-[17px]', done && 'text-muted line-through decoration-muted/60')}>{task.title}</h3>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3 w-3" />

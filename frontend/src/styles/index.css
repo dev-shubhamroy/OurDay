@@ -269,6 +269,22 @@
     --aura-glow: 0.16;
     --aura-wash: 0.07;
   }
+  /* Tomorrow's deadlines: same identity, slightly less intense. */
+  .aurora-deadline[data-subdued='true'][data-tone='critical'] {
+    --aura-line: 0.38;
+    --aura-glow: 0.34;
+    --aura-wash: 0.1;
+  }
+  .aurora-deadline[data-subdued='true'][data-tone='approaching'] {
+    --aura-line: 0.28;
+    --aura-glow: 0.18;
+    --aura-wash: 0.07;
+  }
+  .aurora-deadline[data-subdued='true'][data-tone='normal'] {
+    --aura-line: 0.18;
+    --aura-glow: 0.08;
+    --aura-wash: 0.04;
+  }
   .aurora-deadline[data-tone='done'] {
     --aura: var(--ok);
   }

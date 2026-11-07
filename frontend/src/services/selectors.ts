@@ -14,6 +14,11 @@ export function todayDeadlines(tasks: Task[], now: Date): Task[] {
   return tasks.filter((t) => t.kind === 'deadline' && t.date === today && !isExpired(t, now)).sort(byDue)
 }
 
+/** Incomplete, still-active deadlines due on a given local day, earliest first. Reuses the Today rules. */
+export function openDeadlinesOn(tasks: Task[], now: Date, dayKey: DateKey): Task[] {
+  return tasks.filter((t) => t.kind === 'deadline' && t.date === dayKey && t.status === 'open' && !isExpired(t, now)).sort(byDue)
+}
+
 export function todayDaily(tasks: Task[], now: Date): Task[] {
   const today = toKey(now)
   return tasks.filter((t) => t.kind === 'daily' && t.date === today).sort(byPlan)
@@ -61,6 +66,17 @@ export function upcomingTasks(tasks: Task[], now: Date): Task[] {
   const today = toKey(now)
   return tasks
     .filter((t) => t.date > today)
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.kind === b.kind ? (a.kind === 'deadline' ? byDue(a, b) : byPlan(a, b)) : a.kind === 'deadline' ? -1 : 1))
+}
+
+/**
+ * Home "Coming up": every open, still-active deadline from now on (today and tomorrow included, so they also
+ * appear in their date groups) plus future daily tasks. Completed deadlines are excluded (see Completed).
+ */
+export function comingUpTasks(tasks: Task[], now: Date): Task[] {
+  const today = toKey(now)
+  return tasks
+    .filter((t) => (t.kind === 'deadline' ? t.status === 'open' && t.date >= today && !isExpired(t, now) : t.date > today))
     .sort((a, b) => a.date.localeCompare(b.date) || (a.kind === b.kind ? (a.kind === 'deadline' ? byDue(a, b) : byPlan(a, b)) : a.kind === 'deadline' ? -1 : 1))
 }
 

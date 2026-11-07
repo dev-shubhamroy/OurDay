@@ -1,6 +1,6 @@
-import { ArrowRight, Flag, Repeat, Users } from 'lucide-react'
+import { ArrowRight, Repeat, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { DeadlineCard } from '../components/tasks/DeadlineCard'
+import { DeadlineGroups } from '../components/tasks/DeadlineGroups'
 import { PersonProgress } from '../components/tasks/PersonProgress'
 import { TaskRow } from '../components/tasks/TaskRow'
 import { Avatar } from '../components/ui/Avatar'
@@ -9,15 +9,19 @@ import { DailyProgressCard } from '../components/tasks/DailyProgress'
 import { EmptyState, SectionHeader } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
 import { formatLongDate, formatTime, greetingFor } from '../services/dates'
-import { habitOccurrencesToday, taskProgress, todayActivity, todayDeadlines, upcomingTasks } from '../services/selectors'
+import { habitOccurrencesToday, taskProgress, comingUpTasks, todayActivity } from '../services/selectors'
+
+const COMING_UP_MAX = 5
 
 export default function Home() {
   const { tasks, habits, now, today, me, users, userById } = useApp()
   const t = taskProgress(tasks, now)
   const occ = habitOccurrencesToday(habits, now)
-  const next = todayDeadlines(tasks, now).find((d) => d.status === 'open')
   const activity = todayActivity(tasks, habits, now)
-  const ahead = upcomingTasks(tasks, now).slice(0, 3)
+  // Show everything while it's short; if it grows past COMING_UP_MAX, keep just the next 3 deadlines (rest via "See all").
+  const comingAll = comingUpTasks(tasks, now)
+  const nextDeadlines = comingAll.filter((x) => x.kind === 'deadline').slice(0, 3)
+  const ahead = comingAll.length <= COMING_UP_MAX ? comingAll : nextDeadlines.length > 0 ? nextDeadlines : comingAll.slice(0, 3)
   const total = t.total + occ.length
   const together = t.done + occ.filter((o) => o.done).length
 
@@ -26,10 +30,7 @@ export default function Home() {
       <PageHeader eyebrow={formatLongDate(now)} title={`${greetingFor(now)}, ${me.name}`} subtitle="Here’s how today is shaping up for both of you." />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="space-y-6">
-          <section className="animate-rise" style={{ animationDelay: '.06s' }}>
-            <SectionHeader icon={<Flag className="h-4 w-4" />} title="Next deadline" />
-            {next ? <DeadlineCard task={next} /> : <EmptyState icon={<Flag className="h-6 w-6" />} title="No deadlines pressing today" />}
-          </section>
+          <DeadlineGroups />
 
           <section className="animate-rise" style={{ animationDelay: '.12s' }}>
             <SectionHeader icon={<ArrowRight className="h-4 w-4" />} title="Coming up" meta={<Link to="/upcoming" className="hit-44 text-accent hover:underline">See all</Link>} />
@@ -37,7 +38,7 @@ export default function Home() {
               {ahead.length === 0 ? (
                 <EmptyState icon={<ArrowRight className="h-6 w-6" />} title="Nothing scheduled ahead" />
               ) : (
-                ahead.map((x) => <TaskRow key={x.id} kind={x.kind} title={x.title} owner={userById(x.createdBy)} bell={x.notifySecondUser} meta={x.date === today ? 'Today' : new Date(`${x.date}T00:00`).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' })} />)
+                ahead.map((x) => <TaskRow key={x.id} kind={x.kind} title={x.title} owner={userById(x.createdBy)} bell={x.notifySecondUser} meta={`${x.date === today ? 'Today' : new Date(`${x.date}T00:00`).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' })}${x.kind === 'deadline' && x.dueAt ? ` · ${formatTime(x.dueAt)}` : ''}`} />)
               )}
             </div>
           </section>
