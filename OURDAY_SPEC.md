@@ -28,6 +28,7 @@
 - Warmth: a soft coral tone identifies the partner; accent cyan identifies "you".
 - No space/planet imagery, no heavy neon, no chat UI.
 - Responsive: persistent sidebar on desktop, slide-over drawer on mobile.
+- **Time display: 12-hour with AM/PM everywhere** (e.g. `2:25 PM`, `9:30 AM`, `12:00 AM` at midnight, `12:00 PM` at noon), regardless of the device locale. This covers deadline and task times, countdown timestamps, completion times, Upcoming, Past / Missed, Completed, habit calendar details, RANA's briefing and the Add Task modal. Time entry uses a 12-hour picker (hour, minute and a separate AM/PM choice). It is a display and input convention only: stored values stay 24-hour `HH:mm` or ISO timestamps, calculations and time-zone handling are unchanged, and the planned 9:30 PM habit check-in is unchanged. Formatting lives in `services/dates.ts`; entry in `components/ui/TimePicker.tsx`. Dates still follow the device's date format.
 - Sidebar: Home, Today, Upcoming, Deadlines, Habits, Completed, Past / Missed, Settings. Future/tomorrow/past items stay off the default Today screen.
 
 ## 5. Two-user model

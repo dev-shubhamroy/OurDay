@@ -8,6 +8,7 @@ import { Button } from '../ui/Button'
 import { cn } from '../ui/cn'
 import { Field, Segmented, Switch, fieldCls } from '../ui/Controls'
 import { Modal } from '../ui/Modal'
+import { TimePicker } from '../ui/TimePicker'
 
 const TYPES: { value: TaskType; label: string; icon: React.ReactNode }[] = [
   { value: 'daily', label: 'Daily Task', icon: <CalendarCheck className="h-4 w-4" /> },
@@ -75,22 +76,22 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
 
       {type === 'deadline' && (
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Deadline date" htmlFor="at-date" error={error?.field === 'date' ? error.msg : undefined} className="col-span-2 sm:col-span-1">
+          <Field label="Deadline date" htmlFor="at-date" error={error?.field === 'date' ? error.msg : undefined} className="col-span-2">
             <input id="at-date" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
           </Field>
-          <Field label="Deadline time" htmlFor="at-dtime" className="col-span-2 sm:col-span-1">
-            <input id="at-dtime" type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} className={fieldCls} />
+          <Field label="Deadline time" htmlFor="at-dtime" className="col-span-2">
+            <TimePicker id="at-dtime" label="Deadline time" value={dueTime} onChange={setDueTime} />
           </Field>
         </div>
       )}
 
       {type === 'daily' && (
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Planned date" htmlFor="at-pdate" error={error?.field === 'date' ? error.msg : undefined} className="col-span-2 sm:col-span-1">
+          <Field label="Planned date" htmlFor="at-pdate" error={error?.field === 'date' ? error.msg : undefined} className="col-span-2">
             <input id="at-pdate" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
           </Field>
-          <Field label="Time (optional)" htmlFor="at-time" className="col-span-2 sm:col-span-1">
-            <input id="at-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} className={fieldCls} />
+          <Field label="Time (optional)" htmlFor="at-time" className="col-span-2">
+            <TimePicker id="at-time" label="Time" value={time} onChange={setTime} clearable />
           </Field>
         </div>
       )}

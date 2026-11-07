@@ -25,9 +25,46 @@ export function atTime(key: DateKey, hhmm: string): Date {
 
 export const weekday = (key: DateKey) => fromKey(key).getDay()
 
+/**
+ * User-facing time is always 12-hour with AM/PM, independent of the device locale:
+ * 00:00 → 12:00 AM, 09:30 → 9:30 AM, 12:00 → 12:00 PM, 20:45 → 8:45 PM.
+ * Stored values stay 24-hour (`HH:mm`) or ISO timestamps; only display changes.
+ * A no-break space keeps "2:25 PM" from wrapping between time and period.
+ */
+export type Period = 'AM' | 'PM'
+
+export function format12(hour24: number, minute: number): string {
+  const period: Period = hour24 >= 12 ? 'PM' : 'AM'
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12
+  return `${hour12}:${pad(minute)}\u00A0${period}`
+}
+
+/** Display a Date or ISO timestamp (local time zone). */
 export function formatTime(value: string | Date): string {
   const d = typeof value === 'string' ? new Date(value) : value
-  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  return format12(d.getHours(), d.getMinutes())
+}
+
+/** Display a stored `HH:mm` clock value. */
+export function formatClock(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number)
+  return format12(h, m)
+}
+
+export interface TimeParts {
+  hour: number // 1–12
+  minute: number // 0–59
+  period: Period
+}
+
+export function toParts(hhmm: string): TimeParts {
+  const [h, m] = hhmm.split(':').map(Number)
+  return { hour: h % 12 === 0 ? 12 : h % 12, minute: m, period: h >= 12 ? 'PM' : 'AM' }
+}
+
+/** 12:xx AM → 00:xx and 12:xx PM → 12:xx; everything else adds 12 for PM. */
+export function fromParts({ hour, minute, period }: TimeParts): string {
+  return `${pad(hour % 12 + (period === 'PM' ? 12 : 0))}:${pad(minute)}`
 }
 
 export function formatShortDate(key: DateKey): string {

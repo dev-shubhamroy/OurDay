@@ -5,7 +5,7 @@ import { RanaRobot } from '../components/rana/RanaRobot'
 import { UrgencyBadge } from '../components/tasks/UrgencyBadge'
 import { Button } from '../components/ui/Button'
 import { useApp } from '../hooks/useApp'
-import { formatDeadline, formatLongDate, formatRemaining, formatTime } from '../services/dates'
+import { formatDeadline, formatLongDate, formatClock, formatRemaining } from '../services/dates'
 import { markBriefingSeen } from '../services/briefingSeen'
 import { scheduleLabel } from '../services/habits'
 import { buildBriefing } from '../services/rana'
@@ -68,7 +68,7 @@ export default function Briefing() {
               <li key={t.id} className="tile flex items-center gap-3 p-3.5">
                 <span className="h-4 w-4 rounded-md border-2 border-line/30" />
                 <p className="min-w-0 flex-1 truncate font-medium">{t.title}</p>
-                <span className="text-xs text-muted">{t.time ? formatTime(new Date(`${t.date}T${t.time}`)) : 'Anytime'}</span>
+                <span className="text-xs text-muted">{t.time ? formatClock(t.time) : 'Anytime'}</span>
                 {t.notifySecondUser && <Bell className="h-3.5 w-3.5 text-accent" aria-label="Shared notifications" />}
               </li>
             ))}

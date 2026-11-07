@@ -3,7 +3,7 @@ import { Chip, TaskRow } from '../components/tasks/TaskRow'
 import { PageHeader } from '../components/ui/PageHeader'
 import { EmptyState } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
-import { formatDayLabel, formatDeadline, formatTime } from '../services/dates'
+import { formatClock, formatDayLabel, formatDeadline } from '../services/dates'
 import { upcomingTasks } from '../services/selectors'
 import type { Task } from '../types'
 
@@ -33,7 +33,7 @@ export default function Upcoming() {
                     title={t.title}
                     owner={userById(t.createdBy)}
                     bell={t.notifySecondUser}
-                    meta={t.kind === 'deadline' ? `Due ${formatDeadline(t.dueAt!, today)}` : t.time ? formatTime(new Date(`${t.date}T${t.time}`)) : 'Anytime'}
+                    meta={t.kind === 'deadline' ? `Due ${formatDeadline(t.dueAt!, today)}` : t.time ? formatClock(t.time) : 'Anytime'}
                     right={t.kind === 'deadline' ? <Chip tone="accent">Deadline</Chip> : undefined}
                   />
                 ))}
