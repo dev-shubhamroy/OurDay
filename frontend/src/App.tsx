@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
+import { PublicOnly, RequireAuth } from './components/layout/AuthGuards'
 import { useApp } from './hooks/useApp'
+import Login from './pages/auth/Login'
 import Briefing from './pages/Briefing'
 import Completed from './pages/Completed'
 import Deadlines from './pages/Deadlines'
@@ -12,6 +14,7 @@ import Today from './pages/Today'
 import Upcoming from './pages/Upcoming'
 import { hasSeenBriefing } from './services/briefingSeen'
 import { AppProvider } from './store/AppProvider'
+import { AuthProvider } from './store/AuthProvider'
 import { ThemeProvider } from './store/theme'
 
 /** The first screen each day is RANA's briefing. */
@@ -25,9 +28,14 @@ function BriefingGate() {
 export default function App() {
   return (
     <ThemeProvider>
+      <AuthProvider>
       <AppProvider>
         <BrowserRouter>
           <Routes>
+            <Route element={<PublicOnly />}>
+              <Route path="/login" element={<Login />} />
+            </Route>
+            <Route element={<RequireAuth />}>
             <Route element={<BriefingGate />}>
               <Route path="/briefing" element={<Briefing />} />
               <Route element={<AppShell />}>
@@ -43,9 +51,11 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/home" replace />} />
               </Route>
             </Route>
+            </Route>
           </Routes>
         </BrowserRouter>
       </AppProvider>
+      </AuthProvider>
     </ThemeProvider>
   )
 }

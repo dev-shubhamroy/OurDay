@@ -25,3 +25,7 @@ frontend/src
 ```
 
 Mock data lives in `src/data`; pure logic (dates, urgency, selectors, RANA copy) in `src/services`.
+
+## Authentication (Supabase)
+
+Copy `frontend/.env.example` to `frontend/.env.local` and fill in the **public** project URL and publishable key. `.env.local` is git-ignored. Never put the service-role key, database password or SMTP credentials in any `VITE_` variable. Without these variables the app runs in local demo mode (no login).

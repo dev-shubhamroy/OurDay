@@ -107,13 +107,36 @@ Current mock frontend: no notification is sent and no prompt is shown. The only 
 - Shared habits split each date into two halves (you left, partner right) with independent statuses.
 - Dates are clickable: the detail panel shows whether the habit was scheduled, who completed it and when, who missed it, or that it is still open today.
 
-## 10. Architecture
+## 10. Authentication and workspace (Supabase)
+OurDay is a private app for two people, so authentication is deliberately simple.
+
+### Approved decisions
+- **Email + password** with a name at registration, a password-strength hint and a visibility toggle. **No mandatory email verification** (users get in immediately), and no OTP, magic links, MFA, social login, approval workflows or heavy onboarding.
+- **Sessions** persist across refresh and browser restarts via Supabase's own persistence and token refresh; logout is explicit. Passwords are never stored by the app.
+- **Password recovery** uses Supabase's reset-email link; expired/invalid links are handled gracefully.
+- **Workspace:** one private workspace shared by exactly two accounts. The first user creates it (owner); the second joins with an invitation link/code. Invitations: random code, only its hash stored, single-use, 7-day expiry, owner can revoke and regenerate. One workspace per user, never a third member, enforced in the database (constraints + transactional functions), not in the UI.
+- **Security:** Supabase Auth for accounts; Row Level Security on all workspace tables; no client writes to membership/roles; invitations not readable by clients. Only the public publishable key is used in the browser; the service-role key, database password and SMTP credentials never appear in frontend code. `.env.local` is gitignored; `frontend/.env.example` holds placeholders only.
+- Task and habit permissions are **not** changed by this milestone (both members see and act on everything per the existing rules; the notification toggle never controls access).
+
+### Milestones
+1. **Authentication foundation — implemented:** Supabase client (`src/lib/supabase.ts`), env config, `AuthProvider` (restores the session; handles sign-out, refresh and recovery events), route guards (`RequireAuth`, `PublicOnly`) and a placeholder `/login` page.
+   - **Demo mode:** if the two public env vars are absent, auth is `disabled` and the app behaves exactly as before (mock identities, no login). With them set, signed-out visitors are redirected to `/login` (original path kept) and signed-in users go straight to the app.
+2. Database and security (migrations, RLS, constraints, functions, SQL tests) — planned.
+3. Auth screens: register, login, forgot/reset password, logout — planned.
+4. Workspace pairing: create, invite, accept, failure handling — planned.
+5. Frontend integration: replace hardcoded Shubham/Aanya with real profiles; tasks and habits stay mock — planned.
+
+### Status of related functionality
+- **Mock-only until Milestone 5:** the signed-in user is still shown as the mock identity.
+- **Not started:** real task/habit persistence, realtime sync, notifications, offline storage.
+
+## 11. Architecture
 - `frontend/` — React + Vite + TypeScript + Tailwind CSS + Lucide + React Router.
 - Layout: `components/{layout,tasks,habits,rana,ui}`, `pages`, `hooks`, `services` (pure date/selector/RANA logic), `store` (context + reducer), `data` (mock data), `types`, `styles`.
 - Mock data is isolated in `src/data`; the store is the only place state is mutated, so it can later be swapped for IndexedDB + Supabase sync.
 - Planned stack (not built): Supabase (auth + PostgreSQL + Realtime), IndexedDB offline-first, PWA, Vercel, native Android/macOS companions.
 
-## 11. Status
+## 12. Status
 ### Implemented frontend functionality
 - Dark / light / system theme with tokens; responsive shell (sidebar on desktop, drawer on mobile); translucent sidebar with live badges and a two-user "in sync" card.
 - **RANA briefing** (`/briefing`): first screen each local day (tracked in `localStorage`), deterministic copy, deadlines → tasks → your habits, "Let's get started" opens Home. Replay from Settings or the floating companion. Floating RANA shows a status line and acknowledges completions.
@@ -130,7 +153,7 @@ Current mock frontend: no notification is sent and no prompt is shown. The only 
 - Real reminders and notifications, including the 9:30 PM habit check-in with midnight auto-miss and per-user de-duplication across devices (section 9.3).
 - Full recurrence engine, habit archive, editing/deleting items, unlock-triggered briefing on macOS/Android.
 
-## 12. Open product decisions
+## 13. Open product decisions
 - Default for *Notify second user* (Phase 1: off).
 - Whether today's completions should also appear on Completed before the daily reset (Phase 1: no).
 - Urgency thresholds (currently 3 h critical / 8 h approaching).
