@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Menu, Moon, Sun, X } from 'lucide-react'
 import { useTheme } from '../../hooks/useTheme'
 import { BrandMark } from '../ui/RanaMark'
+import { FloatingRana } from '../rana/FloatingRana'
 import { Sidebar } from './Sidebar'
 
 export function AppShell() {
@@ -55,6 +56,7 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+      <FloatingRana />
     </div>
   )
 }

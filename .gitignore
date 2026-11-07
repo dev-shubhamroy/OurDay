@@ -24,4 +24,4 @@ npm-debug.log*
 .idea
 *.suo
 *.sw?
-.claude/settings.local.json
+.claude/
