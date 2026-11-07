@@ -58,5 +58,8 @@ do { // briefing day
     check(BriefingDay.kind(lastBriefingDay: "2026-11-08", now: b, calendar: c) == .full, "new local day → full")
 }
 
+let done = DispatchSemaphore(value: 0)
+Task.detached { await runAuthTests(); await runDataTests(); runEngineTests(); done.signal() }
+done.wait()
 print("\(checks - failures)/\(checks) checks passed")
 exit(failures == 0 ? 0 : 1)

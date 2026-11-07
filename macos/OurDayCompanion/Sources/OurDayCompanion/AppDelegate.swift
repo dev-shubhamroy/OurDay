@@ -1,9 +1,11 @@
 import AppKit
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let debug = CommandLine.arguments.contains("--debug")
     private lazy var monitor = UnlockMonitor(debug: debug)
-    private let briefing = BriefingWindowController()
+    private lazy var model = CompanionModel()
+    private lazy var briefing = BriefingWindowController(model: model)
     private let dashboard = DashboardWindowController()
     private var statusItem: NSStatusItem!
     private let prefs = Preferences.shared
@@ -20,40 +22,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if debug { installDebugHooks() }
         monitor.onUnlock = { [weak self] id in self?.handleUnlock(id) }
         monitor.start()
+        Task { await model.restore() }
     }
 
-    /// Debug-only hooks so tests can drive and inspect the app without Accessibility permission.
-    private func installDebugHooks() {
-        let dn = DistributedNotificationCenter.default()
-        dn.addObserver(forName: .init("com.ourday.companion.debug.state"), object: nil, queue: .main) { [weak self] _ in
-            guard let self else { return }
-            let n = NSApp.windows.filter { $0.title == "RANA Briefing" && $0.isVisible }.count
-            Log.info("STATE briefingWindowsVisible=\(n) dashboardVisible=\(self.dashboard.isVisible) autoShow=\(self.prefs.autoShowOnUnlock) lastBriefingDay=\(self.prefs.lastBriefingDay ?? "nil") appearance=\(NSApp.effectiveAppearance.name.rawValue) loginItem=\(LoginItem.statusDescription)")
-        }
-        dn.addObserver(forName: .init("com.ourday.companion.debug.setAuto"), object: nil, queue: .main) { [weak self] n in
-            self?.prefs.autoShowOnUnlock = (n.userInfo?["on"] as? String) == "1"
-            Log.info("auto-show on unlock set to \(self?.prefs.autoShowOnUnlock ?? false) [debug]")
-        }
-        dn.addObserver(forName: .init("com.ourday.companion.debug.setLogin"), object: nil, queue: .main) { n in
-            LoginItem.set((n.userInfo?["on"] as? String) == "1")
-        }
-        dn.addObserver(forName: .init("com.ourday.companion.debug.setAppearance"), object: nil, queue: .main) { n in
-            // Simulation only: forces the app's appearance. A real system switch is tested by the user.
-            switch n.userInfo?["mode"] as? String { case "light": NSApp.appearance = NSAppearance(named: .aqua); case "dark": NSApp.appearance = NSAppearance(named: .darkAqua); default: NSApp.appearance = nil }
-        }
-        dn.addObserver(forName: .init("com.ourday.companion.debug.snapshot"), object: nil, queue: .main) { [weak self] n in
-            guard let path = n.userInfo?["path"] as? String, let view = NSApp.windows.first(where: { $0.title == "RANA Briefing" })?.contentView?.superview else { Log.info("snapshot: no window"); return }
-            _ = self
-            guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
-            view.cacheDisplay(in: view.bounds, to: rep)
-            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
-            Log.info("snapshot written (\(view.effectiveAppearance.name.rawValue))")
-        }
-    }
+    nonisolated func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
-
-    // Clicking the app icon again (e.g. from Finder) shows the dashboard instead of doing nothing.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag { dashboard.show() }
         return true
@@ -61,10 +34,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func handleUnlock(_ id: UUID) {
         guard prefs.autoShowOnUnlock else { Log.info("unlock \(id.uuidString.prefix(8)): auto-show is OFF; nothing opened"); return }
-        let now = Date()
-        let kind = BriefingDay.kind(lastBriefingDay: prefs.lastBriefingDay, now: now)
-        prefs.lastBriefingDay = BriefingDay.key(for: now)
-        briefing.show(kind: kind, unlockID: id)       // never opens the dashboard automatically
+        showBriefing(unlockID: id)       // never opens the dashboard automatically
+    }
+
+    private func showBriefing(unlockID: UUID) {
+        guard briefing.show(unlockID: unlockID) else { return }
+        Task { await model.loadBriefing() }
+    }
+
+    /// Debug-only hooks so tests can drive and inspect the app without Accessibility permission.
+    private func installDebugHooks() {
+        let dn = DistributedNotificationCenter.default()
+        func on(_ name: String, _ f: @escaping @MainActor (Notification) -> Void) {
+            dn.addObserver(forName: .init("com.ourday.companion.debug." + name), object: nil, queue: .main) { n in MainActor.assumeIsolated { f(n) } }
+        }
+        on("state") { [weak self] _ in
+            guard let self else { return }
+            let n = NSApp.windows.filter { $0.title == "RANA Briefing" && $0.isVisible }.count
+            Log.info("STATE briefingWindowsVisible=\(n) dashboardVisible=\(self.dashboard.isVisible) autoShow=\(self.prefs.autoShowOnUnlock) phase=\(self.model.phase) cached=\(self.model.cachedSince != nil) signedIn=\(self.model.signedInEmail != nil) appearance=\(NSApp.effectiveAppearance.name.rawValue) loginItem=\(LoginItem.statusDescription)")
+        }
+        on("setAuto") { [weak self] n in self?.prefs.autoShowOnUnlock = (n.userInfo?["on"] as? String) == "1"; Log.info("auto-show on unlock set to \(self?.prefs.autoShowOnUnlock ?? false) [debug]") }
+        on("setLogin") { n in LoginItem.set((n.userInfo?["on"] as? String) == "1") }
+        on("network") { [weak self] n in
+            let m = DebugTransport.Mode(rawValue: (n.userInfo?["mode"] as? String) ?? "normal") ?? .normal
+            self?.model.transport.mode = m; Log.info("debug network mode = \(m.rawValue)")
+        }
+        on("expireToken") { [weak self] _ in Task { await self?.model.debugExpireToken(); Log.info("debug: access token expired/invalidated") } }
+        on("signIn") { [weak self] n in   // debug only; used for the fake-credentials test
+            guard let e = n.userInfo?["email"] as? String, let p = n.userInfo?["password"] as? String else { return }
+            Task { await self?.model.signIn(email: e, password: p) }
+        }
+        on("corruptToken") { [weak self] _ in Task { await self?.model.debugCorruptToken(); Log.info("debug: access token corrupted (expiry unchanged)") } }
+        on("load") { [weak self] n in let fresh = (n.userInfo?["session"] as? String) != "refresh"; Task { await self?.model.loadBriefing(newSession: fresh) } }
+        on("setAppearance") { n in
+            switch n.userInfo?["mode"] as? String { case "light": NSApp.appearance = NSAppearance(named: .aqua); case "dark": NSApp.appearance = NSAppearance(named: .darkAqua); default: NSApp.appearance = nil }
+        }
+        on("snapshot") { n in
+            guard let path = n.userInfo?["path"] as? String, let view = NSApp.windows.first(where: { $0.title == "RANA Briefing" })?.contentView?.superview else { Log.info("snapshot: no window"); return }
+            guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+            view.cacheDisplay(in: view.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+            Log.info("snapshot written (\(view.effectiveAppearance.name.rawValue))")
+        }
     }
 
     // MARK: Menu (rebuilt each time it opens so states are current)
@@ -72,6 +83,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.removeAllItems()
         menu.addItem(item("Open RANA Briefing", #selector(openBriefing)))
         menu.addItem(item("Open OurDay Dashboard", #selector(openDashboard)))
+        menu.addItem(.separator())
+        if let email = model.signedInEmail {
+            let who = NSMenuItem(title: "Signed in as \(email)", action: nil, keyEquivalent: ""); who.isEnabled = false
+            menu.addItem(who)
+            menu.addItem(item("Sign Out", #selector(signOut)))
+        } else {
+            menu.addItem(item("Sign In…", #selector(openBriefing)))
+        }
         menu.addItem(.separator())
         let auto = item("Show briefing when Mac unlocks", #selector(toggleAuto)); auto.state = prefs.autoShowOnUnlock ? .on : .off
         menu.addItem(auto)
@@ -84,11 +103,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func item(_ title: String, _ action: Selector, key: String = "") -> NSMenuItem {
         let i = NSMenuItem(title: title, action: action, keyEquivalent: key); i.target = self; return i
     }
-    @objc private func openBriefing() {
-        let kind = BriefingDay.kind(lastBriefingDay: prefs.lastBriefingDay, now: Date())
-        briefing.show(kind: kind, unlockID: UUID())
-    }
+    @objc private func openBriefing() { showBriefing(unlockID: UUID()) }
     @objc private func openDashboard() { dashboard.show() }
+    @objc private func signOut() { Task { await model.signOut() } }
     @objc private func toggleAuto() { prefs.autoShowOnUnlock.toggle(); Log.info("auto-show on unlock = \(prefs.autoShowOnUnlock)") }
     @objc private func toggleLogin() { LoginItem.set(!LoginItem.isEnabled) }
     @objc private func simulate() { monitor.simulateUnlockCycle() }
