@@ -13,7 +13,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         briefing.openDashboard = { [weak self] in self?.dashboard.show() }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "OurDay")
+        if let img = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "OurDay") { statusItem.button?.image = img }
+        else { statusItem.button?.title = "OurDay" }
         let menu = NSMenu(); menu.delegate = self; statusItem.menu = menu
 
         if debug { installDebugHooks() }
