@@ -56,15 +56,23 @@
 - Mock data is isolated in `src/data`; the store is the only place state is mutated, so it can later be swapped for IndexedDB + Supabase sync.
 - Planned stack (not built): Supabase (auth + PostgreSQL + Realtime), IndexedDB offline-first, PWA, Vercel, native Android/macOS companions.
 
-## 10. Status
-### Implemented
-- Repository, tooling, domain types, design tokens (Milestone 1–2 in progress).
+## 10. Status (Phase 1 complete)
+### Implemented (functional in the UI)
+- Dark / light / system theme with tokens; responsive shell (sidebar on desktop, drawer on mobile); translucent sidebar with live badges and a two-user "in sync" card.
+- **RANA briefing** (`/briefing`): first screen each local day (tracked in `localStorage`), deterministic copy, deadlines → tasks → habits, "Let's get started" opens Home. Replay from Settings or the floating companion. Floating RANA shows a status line and acknowledges completions.
+- **Today**: urgency-coloured deadline cards with live countdown, daily task cards, habit rows, live daily progress ("3 of 6 tasks completed"), swipe-right-to-complete on touch, check controls elsewhere. Completed items keep their position (green check, strikethrough, completion time, muted). Undo is possible the same day.
+- **Add Task**: Daily / Deadline / Habit with conditional fields, validation (deadline must be in the future), notes, *Notify second user* toggle (default **off**), toast confirmation; new items appear in the right screens.
+- **Home** (progress hero, next deadline, coming up, Together + recent updates), **Upcoming**, **Deadlines** (Active | Past; past hidden by default), **Habits** (streak, weekly %, 7-day dots, 4-week grid, pause/resume), **Completed**, **Past / Missed**, **Settings** (theme, account/partner placeholders, replay briefing).
+- Expiry is derived from the clock: an incomplete deadline past its time leaves Today/Deadlines and appears in Past.
 ### Mock-data only
-- All tasks, habits, history, partner activity and notification toggles (no backend, no real notifications).
+- All tasks, habits, history, partner (Aanya) and activity. State lives in memory and resets on reload. The notification toggle and bell are visual only; no notifications are sent. Account/partner info in Settings is static. Seed deadlines are generated relative to "now" (clamped to end of day).
 ### Planned for later phases
-- Supabase auth/DB, realtime sync, IndexedDB offline storage, PWA install, real reminders/notifications, full recurrence engine, habit pause/archive management, unlock-triggered briefing on macOS/Android.
+- Supabase auth/DB, realtime sync, IndexedDB offline storage, PWA install, real reminders/notifications, full recurrence engine, habit archive, editing/deleting tasks, unlock-triggered briefing on macOS/Android.
 
 ## 11. Open product decisions
-- Whether today's completions should also be listed on the Completed screen before the daily reset (Phase 1: no, they stay on Today).
-- Exact urgency thresholds (currently 3 h / 8 h).
+- Default for *Notify second user* (Phase 1: off).
+- Whether today's completions should also appear on Completed before the daily reset (Phase 1: no).
+- Urgency thresholds (currently 3 h critical / 8 h approaching).
 - Daily reset time (Phase 1: local midnight).
+- Whether future items should be completable from Upcoming (Phase 1: view-only).
+- Where "Let's get started" lands (Phase 1: Home).
