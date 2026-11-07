@@ -77,7 +77,7 @@ Current mock frontend: no notification is sent and no prompt is shown. The only 
 - A missed scheduled occurrence breaks that user's streak; unscheduled days do not. Today's still-open occurrence neither counts nor breaks.
 
 ### 9.5 History calendar
-- Five-week Monday-aligned calendar per habit. Colours: **green** = you completed, **cyan/blue** = partner completed, **red** = missed, **neutral** = unscheduled (outlined = still open today).
+- Five-week Monday-aligned calendar per habit. Colours: **green** = you completed, **cyan/blue** = partner completed, **red** = missed, **neutral** = unscheduled, and an **outlined** cell = still open today (the legend lists all five). The selected date is outlined; the detail panel keeps a fixed minimum height so the card doesn't jump.
 - Shared habits split each date into two halves (you left, partner right) with independent statuses.
 - Dates are clickable: the detail panel shows whether the habit was scheduled, who completed it and when, who missed it, or that it is still open today.
 

@@ -20,20 +20,15 @@ export default function Habits() {
 
   return (
     <>
-      <PageHeader eyebrow="Consistency" title="Habits" subtitle="Personal, partner’s and shared. Everyone keeps their own record — completing yours never completes theirs.">
-        <div className="flex gap-3">
-          <div className="tile px-4 py-2.5">
-            <p className="eyebrow">Your today</p>
-            <p className="text-lg font-semibold tabular-nums">{p.done}/{p.total}</p>
-          </div>
-          <div className="tile px-4 py-2.5">
-            <p className="eyebrow">Your best current</p>
-            <p className="text-lg font-semibold tabular-nums">{best} days</p>
-          </div>
-        </div>
+      <PageHeader eyebrow="Consistency" title="Habits" subtitle="Everyone keeps their own record. Completing yours never completes theirs.">
+        <p className="flex items-center gap-3 text-sm text-muted">
+          <span><span className="text-lg font-semibold tabular-nums text-fg">{p.done}/{p.total}</span> done today</span>
+          <span className="h-4 w-px bg-line/20" />
+          <span><span className="text-lg font-semibold tabular-nums text-fg">{best}</span>-day best streak</span>
+        </p>
       </PageHeader>
 
-      <div className="mb-4 max-w-md">
+      <div className="mb-5 max-w-md">
         <Segmented
           label="Filter habits"
           value={filter}
@@ -47,13 +42,6 @@ export default function Habits() {
         />
       </div>
 
-      <p className="mb-6 flex items-start gap-2.5 rounded-2xl border border-line/10 bg-card/50 p-4 text-sm text-muted">
-        <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-        <span>
-          <span className="font-semibold text-fg">Planned: 9:30 PM check-in.</span> Later, each person will be asked about any incomplete habit at 9:30 PM (local time); no answer by midnight counts as missed. For now, today’s habits stay open until midnight, then show as missed. No reminders are sent yet.
-        </span>
-      </p>
-
       {shown.length === 0 ? (
         <EmptyState icon={<Repeat className="h-6 w-6" />} title="No habits here" hint="Use Add Task and choose Habit." />
       ) : (
@@ -63,6 +51,12 @@ export default function Habits() {
           ))}
         </div>
       )}
+      <p className="mt-8 flex items-start gap-2 text-xs leading-relaxed text-muted">
+        <CalendarClock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+        <span>
+          <span className="font-semibold text-fg/80">Planned: 9:30 PM check-in.</span> Later, each person will be asked about any incomplete habit at 9:30 PM; no answer by midnight counts as missed. No reminders are sent yet — today stays open until midnight.
+        </span>
+      </p>
     </>
   )
 }

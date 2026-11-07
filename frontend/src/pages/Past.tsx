@@ -9,6 +9,7 @@ import { missedItems } from '../services/selectors'
 export default function Past() {
   const { tasks, habits, now, today, userById } = useApp()
   const { deadlines, daily, missedHabits } = missedItems(tasks, habits, now)
+  const groupedHabits = [...missedHabits.reduce((m, x) => m.set(`${x.habit.id}|${x.date}`, [...(m.get(`${x.habit.id}|${x.date}`) ?? []), x]), new Map<string, typeof missedHabits>()).values()]
   const empty = deadlines.length + daily.length + missedHabits.length === 0
 
   return (
@@ -40,11 +41,14 @@ export default function Past() {
           )}
           {missedHabits.length > 0 && (
             <section className="animate-rise">
-              <SectionHeader icon={<Repeat className="h-4 w-4" />} title="Missed habit days" meta={`${missedHabits.length}`} />
+              <SectionHeader icon={<Repeat className="h-4 w-4" />} title="Missed habit days" meta={`${groupedHabits.length}`} />
               <div className="space-y-2.5">
-                {missedHabits.map(({ habit, user, date }) => (
-                  <TaskRow key={`${habit.id}-${user}-${date}`} kind="habit" title={habit.title} owner={userById(user)} muted meta={`${userById(user).name} · ${formatDayLabel(date, today)}`} right={<Chip tone="muted">Missed</Chip>} />
-                ))}
+                {groupedHabits.map((group) => {
+                  const { habit, date } = group[0]
+                  return (
+                  <TaskRow key={`${habit.id}-${date}`} kind="habit" title={habit.title} owner={userById(group[0].user)} muted meta={`${group.map((g) => userById(g.user).name).join(' & ')} · ${formatDayLabel(date, today)}`} right={<Chip tone="muted">Missed</Chip>} />
+                  )
+                })}
               </div>
             </section>
           )}

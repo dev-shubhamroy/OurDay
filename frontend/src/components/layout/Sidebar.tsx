@@ -53,9 +53,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="mt-auto rounded-2xl border border-line/10 bg-card/50 p-3">
         <div className="flex items-center gap-3">
-          <div className="flex -space-x-2">
+          <div className="flex -space-x-1.5">
             {users.map((u) => (
-              <Avatar key={u.id} user={u} size="sm" />
+              <Avatar key={u.id} user={u} size="sm" className="ring-card" />
             ))}
           </div>
           <div className="leading-tight">

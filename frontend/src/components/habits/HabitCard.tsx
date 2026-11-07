@@ -33,7 +33,7 @@ export function HabitCard({ habit }: { habit: Habit }) {
   const people = [...habit.participants].sort((a) => (a === me.id ? -1 : 1))
 
   return (
-    <article className={cn('panel flex flex-col gap-5 p-5 transition duration-300', habit.paused && 'opacity-60')}>
+    <article className={cn('panel flex flex-col gap-4 p-4 sm:gap-5 sm:p-5 transition duration-300', habit.paused && 'opacity-60')}>
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="flex items-center gap-2 text-lg font-semibold">
@@ -52,7 +52,7 @@ export function HabitCard({ habit }: { habit: Habit }) {
       </div>
 
       {/* Independent streaks per person */}
-      <div className={cn('grid gap-3', people.length > 1 ? 'sm:grid-cols-2' : '')}>
+      <div className={cn('grid gap-2.5', people.length > 1 ? 'grid-cols-2' : '')}>
         {people.map((u) => {
           const user = userById(u)
           const current = streakOf(habit, u, today)
@@ -61,24 +61,26 @@ export function HabitCard({ habit }: { habit: Habit }) {
               <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
                 <Avatar user={user} size="xs" />
                 {u === me.id ? 'You' : user.name}
-                <span className="ml-auto font-normal tabular-nums">{weeklyRate(habit, u, today)}% this week</span>
               </p>
-              <div className="flex items-end gap-4">
+              <div className="flex items-end gap-3 sm:gap-4">
                 <div>
-                  <p className="eyebrow">Current</p>
+                  <p className="eyebrow !tracking-[0.1em]">Current</p>
                   <p className="flex items-center gap-1 text-2xl font-semibold tabular-nums">
                     <Flame className={cn('h-5 w-5', current > 0 ? 'text-warn' : 'text-muted')} />
                     {current}
                   </p>
                 </div>
                 <div>
-                  <p className="eyebrow">Longest</p>
+                  <p className="eyebrow !tracking-[0.1em]">Longest</p>
                   <p className="flex items-center gap-1 text-2xl font-semibold tabular-nums">
                     <Trophy className="h-4 w-4 text-muted" />
                     {longestStreak(habit, u, today)}
                   </p>
                 </div>
               </div>
+              <p className="mt-2 text-[11px] text-muted">
+                <span className="font-semibold tabular-nums text-fg/80">{weeklyRate(habit, u, today)}%</span> this week
+              </p>
             </div>
           )
         })}
@@ -86,7 +88,7 @@ export function HabitCard({ habit }: { habit: Habit }) {
 
       <HabitCalendar habit={habit} />
 
-      <Button variant="ghost" size="sm" className="self-start" icon={habit.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} onClick={() => setHabitPaused(habit.id, !habit.paused)}>
+      <Button variant="ghost" size="sm" className="mt-auto self-start" icon={habit.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} onClick={() => setHabitPaused(habit.id, !habit.paused)}>
         {habit.paused ? 'Resume habit' : 'Pause habit'}
       </Button>
     </article>

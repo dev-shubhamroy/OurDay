@@ -46,7 +46,7 @@ export function Field({ label, htmlFor, hint, error, children, className }: { la
         {label}
       </label>
       {children}
-      {error ? <p className="mt-1 text-xs text-danger">{error}</p> : hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+      {error ? <p className="mt-1 text-xs text-danger">{error}</p> : hint ? <p className="mt-1 text-[11px] leading-snug text-muted">{hint}</p> : null}
     </div>
   )
 }

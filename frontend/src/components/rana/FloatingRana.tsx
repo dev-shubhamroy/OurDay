@@ -58,11 +58,11 @@ export function FloatingRana() {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? 'Hide RANA' : 'Show RANA'}
         aria-expanded={open}
-        className="group pointer-events-auto relative grid h-[84px] w-[84px] place-items-center rounded-full"
+        className="group pointer-events-auto relative grid h-16 w-16 place-items-center rounded-full sm:h-[76px] sm:w-[76px]"
       >
-        <span className="absolute inset-2 rounded-full bg-accent/20 animate-pulseRing" />
-        <span className="glass absolute inset-1.5 rounded-full shadow-float transition group-hover:shadow-glow" />
-        <RanaRobot mood={mood} glow={false} className="relative h-[68px] w-[68px]" />
+        <span className="absolute inset-1.5 rounded-full bg-accent/20 animate-pulseRing" />
+        <span className="glass absolute inset-1 rounded-full shadow-float transition group-hover:shadow-glow" />
+        <RanaRobot mood={mood} glow={false} className="relative h-[52px] w-[52px] sm:h-[60px] sm:w-[60px]" />
       </button>
     </div>
   )

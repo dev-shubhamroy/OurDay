@@ -66,7 +66,7 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
   const toggleDay = (d: number) => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]))
 
   return (
-    <form onSubmit={submit} className="space-y-4" noValidate>
+    <form onSubmit={submit} className="space-y-3.5" noValidate>
       <Segmented label="Task type" value={type} options={TYPES} onChange={(v) => { setType(v); setError(null) }} />
 
       <Field label={type === 'habit' ? 'Habit name' : 'Task title'} htmlFor="at-title" error={error?.field === 'title' ? error.msg : undefined}>
@@ -140,11 +140,11 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
       )}
 
       <Field label="Notes (optional)" htmlFor="at-notes">
-        <textarea id="at-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Anything worth remembering" className={cn(fieldCls, 'h-auto resize-none py-2.5')} maxLength={300} />
+        <textarea id="at-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Anything worth remembering" className={cn(fieldCls, 'h-auto min-h-[3.25rem] resize-none py-2.5')} maxLength={300} />
       </Field>
 
       {!(type === 'habit' && shared) && (
-      <div className="flex items-center gap-3 rounded-2xl border border-line/10 bg-card/60 p-3.5">
+      <div className="flex items-center gap-3 rounded-2xl border border-line/10 bg-card/60 p-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
           <BellRing className="h-[18px] w-[18px]" />
         </span>
@@ -156,7 +156,7 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
       </div>
       )}
 
-      <div className="flex gap-3 pt-1">
+      <div className="flex gap-3 pt-0.5">
         <Button type="button" variant="ghost" className="flex-1" onClick={onClose}>
           Cancel
         </Button>
