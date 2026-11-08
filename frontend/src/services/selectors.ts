@@ -156,7 +156,7 @@ export function todayActivity(tasks: Task[], habits: Habit[], now: Date): Comple
 export interface DayItem {
   id: string
   title: string
-  kind: 'daily' | 'deadline' | 'habit'
+  kind: 'daily' | 'deadline' | 'shared' | 'habit'
   done: boolean
   /** ISO completion time, when done. */
   at?: string

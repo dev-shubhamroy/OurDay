@@ -4,7 +4,7 @@ import { toKey } from '../dates'
 /** Row shapes as returned by Supabase (snake_case, Postgres types as strings). */
 export interface TaskRow {
   id: string
-  kind: 'daily' | 'deadline'
+  kind: 'daily' | 'deadline' | 'shared'
   title: string
   notes: string | null
   created_by: string
@@ -16,6 +16,13 @@ export interface TaskRow {
   completed_at: string | null
   completed_by: string | null
   created_at: string
+  shared_state?: 'active' | 'awaiting_approval' | 'completed' | null
+  completion_requested_by?: string | null
+  completion_requested_at?: string | null
+  approved_by?: string | null
+  approved_at?: string | null
+  rejected_by?: string | null
+  rejected_at?: string | null
 }
 
 export interface HabitRow {
@@ -45,7 +52,7 @@ export interface HabitLogRow {
  * same moment even if their devices are in different zones. Planned time `HH:mm:ss` is shown as `HH:mm`.
  */
 export function taskFromRow(r: TaskRow): Task {
-  const deadline = r.kind === 'deadline' && r.due_at
+  const deadline = (r.kind === 'deadline' || r.kind === 'shared') && r.due_at
   return {
     id: r.id,
     kind: r.kind,
@@ -60,6 +67,17 @@ export function taskFromRow(r: TaskRow): Task {
     status: r.status,
     completedAt: r.completed_at ?? undefined,
     completedBy: r.completed_by ?? undefined,
+    ...(r.kind === 'shared'
+      ? {
+          sharedState: r.shared_state ?? 'active',
+          completionRequestedBy: r.completion_requested_by ?? undefined,
+          completionRequestedAt: r.completion_requested_at ?? undefined,
+          approvedBy: r.approved_by ?? undefined,
+          approvedAt: r.approved_at ?? undefined,
+          rejectedBy: r.rejected_by ?? undefined,
+          rejectedAt: r.rejected_at ?? undefined,
+        }
+      : {}),
   }
 }
 

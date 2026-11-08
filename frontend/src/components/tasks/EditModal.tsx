@@ -46,6 +46,12 @@ function EditTaskForm({ task, onClose }: { task: Task; onClose: () => void }) {
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return setError('Give your task a title.')
+    if (task.kind === 'shared') {
+      // Optional deadline: clear both fields to remove it.
+      if (date && !time) return setError('Choose a deadline time, or clear the date.')
+      updateTask(task.id, { title, notes, date: date || task.date, dueAt: date && time ? atTime(date, time).toISOString() : '' })
+      return onClose()
+    }
     if (!date) return setError('Choose a date.')
     if (task.kind === 'deadline') {
       if (!time) return setError('Choose a deadline time.')
@@ -61,22 +67,29 @@ function EditTaskForm({ task, onClose }: { task: Task; onClose: () => void }) {
       <Field label="Title" htmlFor="et-title" error={error ?? undefined}>
         <input id="et-title" value={title} onChange={(e) => setTitle(e.target.value)} className={fieldCls} maxLength={200} />
       </Field>
-      <Field label={task.kind === 'deadline' ? 'Deadline date' : 'Planned date'} htmlFor="et-date">
+      <Field label={task.kind === 'shared' ? 'Deadline date (optional)' : task.kind === 'deadline' ? 'Deadline date' : 'Planned date'} htmlFor="et-date">
         <input id="et-date" type="date" value={date} min={task.status === 'open' ? today : undefined} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
       </Field>
-      <Field label={task.kind === 'deadline' ? 'Deadline time' : 'Time (optional)'} htmlFor="et-time">
-        <TimePicker id="et-time" label="Time" value={time} onChange={setTime} clearable={task.kind === 'daily'} />
+      <Field label={task.kind === 'deadline' ? 'Deadline time' : task.kind === 'shared' ? 'Deadline time' : 'Time (optional)'} htmlFor="et-time">
+        <TimePicker id="et-time" label="Time" value={time} onChange={setTime} clearable={task.kind !== 'deadline'} />
       </Field>
+      {task.kind === 'shared' && date && (
+        <button type="button" onClick={() => { setDate(''); setTime('') }} className="-mt-1 text-xs font-semibold text-accent hover:underline">
+          Remove the deadline
+        </button>
+      )}
       <Field label="Notes (optional)" htmlFor="et-notes">
         <textarea id="et-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={cn(fieldCls, 'h-auto min-h-[3.25rem] resize-none py-2.5')} maxLength={1000} />
       </Field>
-      <div className="flex items-center gap-3 rounded-tile border border-line/10 bg-card/60 p-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Notify {partner.name}</p>
-          <p className="text-xs text-muted">Controls notifications only. Both of you can always see and edit it.</p>
+      {task.kind !== 'shared' && (
+        <div className="flex items-center gap-3 rounded-tile border border-line/10 bg-card/60 p-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Notify {partner.name}</p>
+            <p className="text-xs text-muted">Controls notifications only. Both of you can always see and edit it.</p>
+          </div>
+          <Switch checked={notify} onChange={setNotify} label={`Notify ${partner.name}`} />
         </div>
-        <Switch checked={notify} onChange={setNotify} label={`Notify ${partner.name}`} />
-      </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
         <DeleteRow
           label="task"
@@ -92,7 +105,7 @@ function EditTaskForm({ task, onClose }: { task: Task; onClose: () => void }) {
           <Button type="submit">Save</Button>
         </div>
       </div>
-      {task.status === 'completed' && (
+      {task.status === 'completed' && task.kind !== 'shared' && (
         <button type="button" onClick={() => { toggleTask(task.id); onClose() }} className="text-xs font-semibold text-accent hover:underline">
           Mark as not done
         </button>

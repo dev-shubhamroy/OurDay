@@ -3,7 +3,7 @@ import type { SyncState } from '../lib/realtime'
 import type { DateKey, Habit, HabitSchedule, Task, User } from '../types'
 
 export interface NewTaskInput {
-  kind: 'daily' | 'deadline'
+  kind: 'daily' | 'deadline' | 'shared'
   title: string
   notes?: string
   date: DateKey
@@ -74,6 +74,12 @@ export interface AppCtx {
   deleteHabit: (id: string) => void
   /** Records the current user's "No" at the habit check-in. */
   markHabitMissed: (id: string) => void
+  /** Shared tasks: every state change goes through the server (it needs the other person's approval). Resolve to an error message or null. */
+  requestCompletion: (id: string) => Promise<string | null>
+  reviewCompletion: (id: string, approve: boolean) => Promise<string | null>
+  reopenShared: (id: string) => Promise<string | null>
+  /** Resolves to an error message, or `{ delivered }` (false when the other person muted partner notifications). */
+  remindPartner: (id: string, message: string) => Promise<string | { delivered: boolean }>
 }
 
 export const AppContext = createContext<AppCtx | null>(null)

@@ -75,6 +75,9 @@ function reducer(state: State, action: Action): State {
 let counter = 0
 const newId = (p: string) => `${p}-${Date.now().toString(36)}-${counter++}`
 
+const DEMO_MSG = 'Shared approvals and reminders work when you’re signed in with your partner.'
+const demoOnly = async (): Promise<string | null> => DEMO_MSG
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const now = useNow()
   const [state, dispatch] = useReducer(reducer, undefined, () => ({ ...createSeed(new Date()), pulse: 0 }))
@@ -129,6 +132,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateHabit,
       deleteHabit,
       markHabitMissed,
+      requestCompletion: demoOnly,
+      reviewCompletion: demoOnly,
+      reopenShared: demoOnly,
+      remindPartner: async () => DEMO_MSG,
       sync,
     }
   }, [now, today, state, toggleTask, toggleHabit, setHabitPaused, addTask, addHabit, updateTask, deleteTask, updateHabit, deleteHabit, markHabitMissed, sync])

@@ -10,6 +10,7 @@ import { EmptyState, SectionHeader } from '../components/ui/SectionHeader'
 import { useApp } from '../hooks/useApp'
 import { useViewData } from '../hooks/useView'
 import { formatLongDate, formatTime, greetingFor } from '../services/dates'
+import { SharedPreview } from '../components/shared/SharedPreview'
 import { habitOccurrencesToday, taskProgress, comingUpTasks, todayActivity } from '../services/selectors'
 
 const COMING_UP_MAX = 5
@@ -33,6 +34,8 @@ export default function Home() {
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <DeadlineGroups />
+
+          <SharedPreview />
 
           <section className="animate-rise" style={{ animationDelay: '.12s' }}>
             <SectionHeader icon={<ArrowRight className="h-4 w-4" />} title="Coming up" meta={<Link to="/upcoming" className="inline-flex min-h-11 items-center text-accent hover:underline">See all</Link>} />

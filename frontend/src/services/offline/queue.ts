@@ -1,5 +1,6 @@
 import type { NewHabitInput, NewTaskInput, UpdateHabitInput, UpdateTaskInput } from '../../store/appContext'
 import type { Habit, Task } from '../../types'
+import { toKey } from '../dates'
 import type { Action } from '../remote/state'
 
 /**
@@ -109,7 +110,7 @@ export interface OverlayCtx {
 export function opActions(op: Op, ctx: OverlayCtx): Action[] {
   switch (op.type) {
     case 'task.insert':
-      return [{ type: 'task', task: { id: op.id, kind: op.input.kind, title: op.input.title.trim(), notes: op.input.notes?.trim() || undefined, createdBy: op.createdBy, createdAt: op.at, notifySecondUser: op.input.notifySecondUser, date: op.input.date, time: op.input.time, dueAt: op.input.dueAt, status: 'open' } }]
+      return [{ type: 'task', task: { id: op.id, kind: op.input.kind, title: op.input.title.trim(), notes: op.input.notes?.trim() || undefined, createdBy: op.createdBy, createdAt: op.at, notifySecondUser: op.input.kind === 'shared' ? true : op.input.notifySecondUser, date: op.input.dueAt && op.input.kind !== 'daily' ? toKey(new Date(op.input.dueAt)) : op.input.date, time: op.input.time, dueAt: op.input.dueAt, status: 'open', ...(op.input.kind === 'shared' ? { sharedState: 'active' as const } : {}) } }]
     case 'task.patch':
       return [{ type: 'taskPatch', id: op.id, patch: { ...op.patch, notes: op.patch.notes === undefined ? undefined : op.patch.notes || undefined } as Partial<Task> }]
     case 'task.complete':

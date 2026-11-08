@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { BellRing, CalendarCheck, Flag, Repeat } from 'lucide-react'
+import { BellRing, CalendarCheck, Flag, Repeat, Users } from 'lucide-react'
 import { useApp } from '../../hooks/useApp'
 import { atTime } from '../../services/dates'
 import { dayName } from '../../services/habits'
@@ -14,6 +14,7 @@ const TYPES: { value: TaskType; label: string; icon: React.ReactNode }[] = [
   { value: 'daily', label: 'Daily Task', icon: <CalendarCheck className="h-4 w-4" /> },
   { value: 'deadline', label: 'Deadline', icon: <Flag className="h-4 w-4" /> },
   { value: 'habit', label: 'Habit', icon: <Repeat className="h-4 w-4" /> },
+  { value: 'shared', label: 'Shared', icon: <Users className="h-4 w-4" /> },
 ]
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
@@ -38,6 +39,7 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
   const [notes, setNotes] = useState('')
   const [notify, setNotify] = useState(false)
   const [shared, setShared] = useState(false)
+  const [hasDeadline, setHasDeadline] = useState(false)
   const [error, setError] = useState<{ field: string; msg: string } | null>(null)
 
   const submit = (e: FormEvent) => {
@@ -50,6 +52,17 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
       if (recurrence === 'weekdays' && days.length === 0) return setError({ field: 'days', msg: 'Pick at least one day.' })
       addHabit({ ...common, shared, notifySecondUser: shared || notify, schedule: recurrence === 'daily' ? { type: 'daily' } : { type: 'weekdays', days: [...days].sort() } })
       onAdded(`Habit “${name}” added`)
+    } else if (type === 'shared') {
+      // Shared task: visible to both of you; the deadline is optional. Finishing it needs the other person's approval.
+      let dueAt: string | undefined
+      if (hasDeadline) {
+        if (!date || !dueTime) return setError({ field: 'date', msg: 'Choose a deadline date and time.' })
+        const due = atTime(date, dueTime)
+        if (due.getTime() <= now.getTime()) return setError({ field: 'date', msg: 'The deadline must be in the future.' })
+        dueAt = due.toISOString()
+      }
+      addTask({ ...common, notifySecondUser: true, kind: 'shared', date: hasDeadline ? date : today, dueAt })
+      onAdded(`Shared task “${name}” added`)
     } else if (type === 'deadline') {
       if (!date || !dueTime) return setError({ field: 'date', msg: 'Choose a deadline date and time.' })
       const due = atTime(date, dueTime)
@@ -71,7 +84,7 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
       <Segmented label="Task type" value={type} options={TYPES} onChange={(v) => { setType(v); setError(null) }} />
 
       <Field label={type === 'habit' ? 'Habit name' : 'Task title'} htmlFor="at-title" error={error?.field === 'title' ? error.msg : undefined}>
-        <input id="at-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={type === 'habit' ? 'e.g. Evening walk' : type === 'deadline' ? 'e.g. Submit visa documents' : 'e.g. Revise chapter 4'} className={fieldCls} maxLength={120} />
+        <input id="at-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={type === 'habit' ? 'e.g. Evening walk' : type === 'shared' ? 'e.g. Plan our weekend trip' : type === 'deadline' ? 'e.g. Submit visa documents' : 'e.g. Revise chapter 4'} className={fieldCls} maxLength={120} />
       </Field>
 
       {type === 'deadline' && (
@@ -82,6 +95,31 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
           <Field label="Deadline time" htmlFor="at-dtime" className="col-span-2">
             <TimePicker id="at-dtime" label="Deadline time" value={dueTime} onChange={setDueTime} />
           </Field>
+        </div>
+      )}
+
+      {type === 'shared' && (
+        <div className="space-y-3">
+          <p className="rounded-tile border border-line/10 bg-card/60 p-3 text-xs leading-snug text-muted">
+            <strong className="text-fg">{partner.name}</strong> and you both see this task. It’s only completed once one of you asks and the other approves.
+          </p>
+          <div className="flex items-center gap-3 rounded-2xl border border-line/10 bg-card/60 p-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">Add a deadline</p>
+              <p className="text-xs text-muted">Optional. Without one it stays on the list until you finish it.</p>
+            </div>
+            <Switch checked={hasDeadline} onChange={setHasDeadline} label="Add a deadline" />
+          </div>
+          {hasDeadline && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Deadline date" htmlFor="at-sdate" error={error?.field === 'date' ? error.msg : undefined} className="col-span-2">
+                <input id="at-sdate" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
+              </Field>
+              <Field label="Deadline time" htmlFor="at-stime" className="col-span-2">
+                <TimePicker id="at-stime" label="Deadline time" value={dueTime} onChange={setDueTime} />
+              </Field>
+            </div>
+          )}
         </div>
       )}
 
@@ -140,11 +178,11 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
         </div>
       )}
 
-      <Field label="Notes (optional)" htmlFor="at-notes">
+      <Field label={type === 'shared' ? 'Description (optional)' : 'Notes (optional)'} htmlFor="at-notes">
         <textarea id="at-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Anything worth remembering" className={cn(fieldCls, 'h-auto min-h-[3.25rem] resize-none py-2.5')} maxLength={300} />
       </Field>
 
-      {!(type === 'habit' && shared) && (
+      {type !== 'shared' && !(type === 'habit' && shared) && (
       <div className="flex items-center gap-3 rounded-2xl border border-line/10 bg-card/60 p-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
           <BellRing className="h-[18px] w-[18px]" />
@@ -162,7 +200,7 @@ function AddTaskForm({ onClose, onAdded }: { onClose: () => void; onAdded: (msg:
           Cancel
         </Button>
         <Button type="submit" className="flex-[2]">
-          {type === 'habit' ? 'Add habit' : type === 'deadline' ? 'Add deadline' : 'Add task'}
+          {type === 'habit' ? 'Add habit' : type === 'deadline' ? 'Add deadline' : type === 'shared' ? 'Add shared task' : 'Add task'}
         </Button>
       </div>
     </form>

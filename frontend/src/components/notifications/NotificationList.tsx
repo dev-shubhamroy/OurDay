@@ -46,7 +46,7 @@ export function NotificationList({ items, onNavigate, empty = 'No notifications 
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className={cn('block truncate text-sm', unread ? 'font-semibold' : 'font-medium text-fg/80')}>{r.title}</span>
-                      <span className="block text-xs text-muted">{r.body}</span>
+                      <span className="block whitespace-pre-line text-xs text-muted">{r.body}</span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-muted">
                       {timeOf(r.occurred_at)}

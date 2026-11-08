@@ -1,4 +1,4 @@
-import { CalendarCheck, CalendarClock, CheckCircle2, History, House, Repeat, Settings, Timer, type LucideIcon } from 'lucide-react'
+import { CalendarCheck, CalendarClock, CheckCircle2, History, House, Repeat, Settings, Timer, Users, type LucideIcon } from 'lucide-react'
 
 export interface NavItem {
   to: string
@@ -12,6 +12,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/upcoming', label: 'Upcoming', icon: CalendarClock },
   { to: '/deadlines', label: 'Deadlines', icon: Timer },
   { to: '/habits', label: 'Habits', icon: Repeat },
+  { to: '/shared', label: 'Shared', icon: Users },
   { to: '/completed', label: 'Completed', icon: CheckCircle2 },
   { to: '/past', label: 'Past / Missed', icon: History },
   { to: '/settings', label: 'Settings', icon: Settings },

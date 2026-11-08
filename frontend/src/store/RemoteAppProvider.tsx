@@ -7,6 +7,7 @@ import { createDebouncer, watchTables, type SyncState } from '../lib/realtime'
 import { supabase } from '../lib/supabase'
 import { toKey } from '../services/dates'
 import { fetchSnapshot, type Ctx } from '../services/remote/data'
+import { reopenSharedRpc, requestCompletionRpc, reviewCompletionRpc, sendReminderRpc, sharedErrorMessage } from '../services/remote/shared'
 import { loadDataCache, saveDataCache } from '../services/offline/cache'
 import { enqueue, loadQueue, opActions, saveQueue, type Op, type QueuedOp } from '../services/offline/queue'
 import { runOp } from '../services/offline/run'
@@ -280,7 +281,7 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
   const toggleTask = useCallback(
     (id: string) => {
       const t = state.tasks.find((x) => x.id === id)
-      if (!t || !ctx) return
+      if (!t || !ctx || t.kind === 'shared') return // shared tasks complete only through the approval flow
       const completing = t.status !== 'completed'
       if (completing) dispatch({ type: 'pulse' })
       submit({ type: 'task.complete', id, completed: completing, by: uid, at: nowIso() })
@@ -359,6 +360,32 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
     [ctx, submit],
   )
 
+  // ---- shared tasks: server-side state machine (needs a connection; nothing is faked offline) -------------------
+  const sharedCall = useCallback(
+    async (run: (c: Ctx['client']) => PromiseLike<{ data: unknown; error: { message?: string; details?: string | null; code?: string } | null }>): Promise<{ error: string | null; data: unknown }> => {
+      if (!ctx) return { error: 'Please sign in again.', data: null }
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return { error: sharedErrorMessage({ message: 'Failed to fetch' }), data: null }
+      try {
+        const { data, error } = await run(ctx.client)
+        void refetch() // both people converge on the server's state right away (realtime does the same for the other device)
+        return { error: error ? sharedErrorMessage(error) : null, data }
+      } catch (e) {
+        return { error: sharedErrorMessage({ message: e instanceof Error ? e.message : '' }), data: null }
+      }
+    },
+    [ctx, refetch],
+  )
+  const requestCompletion = useCallback(async (id: string) => (await sharedCall((c) => requestCompletionRpc(c, id))).error, [sharedCall])
+  const reviewCompletion = useCallback(async (id: string, approve: boolean) => (await sharedCall((c) => reviewCompletionRpc(c, id, approve))).error, [sharedCall])
+  const reopenShared = useCallback(async (id: string) => (await sharedCall((c) => reopenSharedRpc(c, id))).error, [sharedCall])
+  const remindPartner = useCallback(
+    async (id: string, message: string): Promise<string | { delivered: boolean }> => {
+      const r = await sharedCall((c) => sendReminderRpc(c, id, message))
+      return r.error ?? { delivered: (r.data as { delivered?: boolean } | null)?.delivered !== false }
+    },
+    [sharedCall],
+  )
+
   const syncInfo = useMemo<SyncInfo>(
     () => ({ remote: true, state: offline ? 'offline' : sync === 'live' ? 'live' : 'polling', loading, loadError, actionError, pending, syncing, lastSyncedAt, retry: () => { void flushRef.current(); void refetch() } }),
     [offline, sync, loading, loadError, actionError, pending, syncing, lastSyncedAt, refetch],
@@ -386,8 +413,12 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
       updateHabit,
       deleteHabit,
       markHabitMissed,
+      requestCompletion,
+      reviewCompletion,
+      reopenShared,
+      remindPartner,
     }),
-    [syncInfo, users, me, partner, now, today, state, toggleTask, toggleHabit, setHabitPaused, addTask, addHabit, updateTask, deleteTask, updateHabit, deleteHabit, markHabitMissed],
+    [syncInfo, users, me, partner, now, today, state, toggleTask, toggleHabit, setHabitPaused, addTask, addHabit, updateTask, deleteTask, updateHabit, deleteHabit, markHabitMissed, requestCompletion, reviewCompletion, reopenShared, remindPartner],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

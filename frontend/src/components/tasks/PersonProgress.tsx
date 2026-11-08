@@ -8,7 +8,7 @@ import { Avatar } from '../ui/Avatar'
 import { AuroraCard } from '../ui/AuroraCard'
 import { cn } from '../ui/cn'
 
-const KIND_LABEL = { daily: 'Daily task', deadline: 'Deadline', habit: 'Habit' } as const
+const KIND_LABEL = { daily: 'Daily task', deadline: 'Deadline', shared: 'Shared task', habit: 'Habit' } as const
 
 function ItemRow({ item }: { item: DayItem }) {
   return (

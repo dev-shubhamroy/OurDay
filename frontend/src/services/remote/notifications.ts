@@ -13,6 +13,10 @@ export interface NotificationRow {
   actor_id: string | null
   occurred_at: string
   read_at: string | null
+  /** Shared-task notifications: reminder, completion_request, completion_approved, completion_rejected, shared_task. */
+  subtype?: string | null
+  /** Reminders disappear after this moment (24 hours). */
+  expires_at?: string | null
 }
 
 /** Row of `public.notification_preferences`. Synced between the web app and the Mac companion. */
@@ -38,7 +42,9 @@ export const browserTimezone = (): string => {
 export const unreadCount = (rows: NotificationRow[]): number => rows.filter((r) => r.read_at === null).length
 
 /** Where a notification points: the habit, the deadline, or the home screen for partner task activity. */
-export function targetFor(n: Pick<NotificationRow, 'kind' | 'habit_id' | 'task_id'>): string {
+export function targetFor(n: Pick<NotificationRow, 'kind' | 'habit_id' | 'task_id'> & { subtype?: string | null }): string {
+  // Shared-task notifications open that task on the Shared screen.
+  if (n.subtype) return n.task_id ? `/shared?task=${n.task_id}` : '/shared'
   if (n.habit_id || n.kind === 'habit') return '/habits'
   if (n.kind === 'deadline') return '/deadlines'
   return '/home'
@@ -80,7 +86,7 @@ export const withDefaults = (p: Partial<NotificationPrefs> | null | undefined): 
 export const isMissingBackend = (e: { code?: string; message?: string } | null): boolean =>
   !!e && (e.code === 'PGRST202' || e.code === 'PGRST205' || e.code === '42P01' || e.code === '42883' || /could not find the (function|table)/i.test(e.message ?? ''))
 
-const COLUMNS = 'id, kind, title, body, task_id, habit_id, actor_id, occurred_at, read_at'
+const COLUMNS = 'id, kind, title, body, task_id, habit_id, actor_id, occurred_at, read_at, subtype, expires_at'
 
 export async function fetchNotifications(client: SupabaseClient, limit = 100) {
   return client.from('notifications').select(COLUMNS).order('occurred_at', { ascending: false }).limit(limit)

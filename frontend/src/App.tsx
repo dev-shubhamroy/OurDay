@@ -16,6 +16,7 @@ import Past from './pages/Past'
 import Join from './pages/workspace/Join'
 import Setup from './pages/workspace/Setup'
 import Settings from './pages/Settings'
+import Shared from './pages/Shared'
 import Today from './pages/Today'
 import Upcoming from './pages/Upcoming'
 import { PwaBridge } from './pwa/PwaBridge'
@@ -62,6 +63,7 @@ export default function App() {
                       <Route path="/upcoming" element={<Upcoming />} />
                       <Route path="/deadlines" element={<Deadlines />} />
                       <Route path="/habits" element={<Habits />} />
+                      <Route path="/shared" element={<Shared />} />
                       <Route path="/notifications" element={<Notifications />} />
                       <Route path="/completed" element={<Completed />} />
                       <Route path="/past" element={<Past />} />

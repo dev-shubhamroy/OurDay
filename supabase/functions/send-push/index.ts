@@ -11,7 +11,7 @@ const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SE
 webpush.setVapidDetails(Deno.env.get('VAPID_SUBJECT') ?? 'mailto:admin@example.com', Deno.env.get('VAPID_PUBLIC_KEY')!, Deno.env.get('VAPID_PRIVATE_KEY')!)
 
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } })
-const targetFor = (n: { kind: string; habit_id: string | null }) => (n.habit_id || n.kind === 'habit' ? '/habits' : n.kind === 'deadline' ? '/deadlines' : '/home')
+const targetFor = (n: { kind: string; habit_id: string | null; task_id: string | null; subtype: string | null }) => (n.subtype ? (n.task_id ? `/shared?task=${n.task_id}` : '/shared') : n.habit_id || n.kind === 'habit' ? '/habits' : n.kind === 'deadline' ? '/deadlines' : '/home')
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405)
@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad id' }, 400)
 
   // Claim: only the first caller gets the row, so retries/sweeps can never double-send.
-  const { data: rows, error } = await db.from('notifications').update({ push_sent_at: new Date().toISOString() }).eq('id', id).is('push_sent_at', null).select('id, user_id, kind, title, body, habit_id, task_id, occurred_at')
+  const { data: rows, error } = await db.from('notifications').update({ push_sent_at: new Date().toISOString() }).eq('id', id).is('push_sent_at', null).select('id, user_id, kind, title, body, habit_id, task_id, occurred_at, subtype')
   if (error) return json({ error: error.message }, 500)
   const n = rows?.[0]
   if (!n) return json({ skipped: 'already sent or unknown' })

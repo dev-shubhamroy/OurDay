@@ -26,7 +26,7 @@ export interface Snapshot {
 /** Everything the signed-in member is allowed to see (RLS scopes it to their workspace). */
 export async function fetchSnapshot(client: SupabaseClient, memberIds: string[]): Promise<Snapshot> {
   const [tasks, habits, logs] = await Promise.all([
-    selectAll<TaskRow>(client, 'tasks', 'id, kind, title, notes, created_by, notify_second_user, task_date, planned_time, due_at, status, completed_at, completed_by, created_at', 'created_at'),
+    selectAll<TaskRow>(client, 'tasks', 'id, kind, title, notes, created_by, notify_second_user, task_date, planned_time, due_at, status, completed_at, completed_by, created_at, shared_state, completion_requested_by, completion_requested_at, approved_by, approved_at, rejected_by, rejected_at', 'created_at'),
     selectAll<HabitRow>(client, 'habits', 'id, title, notes, created_by, is_shared, owner_id, schedule_days, paused, start_date, notify_second_user', 'created_at'),
     selectAll<HabitLogRow>(client, 'habit_logs', 'habit_id, user_id, day, status, done_at', 'day'),
   ])
@@ -54,7 +54,7 @@ export async function insertTask(c: Ctx, id: string, i: NewTaskInput): Promise<F
     notify_second_user: i.notifySecondUser,
     task_date: i.date,
     planned_time: i.kind === 'daily' && i.time ? i.time : null,
-    due_at: i.kind === 'deadline' ? i.dueAt : null,
+    due_at: i.kind === 'deadline' || i.kind === 'shared' ? (i.dueAt ?? null) : null,
   })
   return fail(error)
 }
@@ -67,6 +67,7 @@ export async function patchTask(c: Ctx, id: string, p: UpdateTaskInput, kind: Ta
   if (p.date !== undefined) row.task_date = p.date
   if (kind === 'daily' && p.time !== undefined) row.planned_time = p.time || null
   if (kind === 'deadline' && p.dueAt !== undefined) row.due_at = p.dueAt
+  if (kind === 'shared' && p.dueAt !== undefined) row.due_at = p.dueAt || null // empty = remove the deadline
   const { error } = await c.client.from('tasks').update(row).eq('id', id)
   return fail(error)
 }

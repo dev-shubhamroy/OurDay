@@ -1,4 +1,4 @@
-import { CalendarCheck, Flag, Repeat } from 'lucide-react'
+import { CalendarCheck, Flag, Repeat, Users } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { TaskType, User } from '../../types'
 import { Avatar } from '../ui/Avatar'
@@ -6,7 +6,7 @@ import { AuroraCard } from '../ui/AuroraCard'
 import { cn } from '../ui/cn'
 import { NotifyBell } from './NotifyBell'
 
-const ICONS = { daily: CalendarCheck, deadline: Flag, habit: Repeat }
+const ICONS = { daily: CalendarCheck, deadline: Flag, habit: Repeat, shared: Users }
 
 /** Read-only compact row used by history and future-looking screens. */
 export function TaskRow({ kind, title, meta, owner, bell, right, muted, struck }: { kind: TaskType; title: string; meta?: ReactNode; owner?: User; bell?: boolean; right?: ReactNode; muted?: boolean; struck?: boolean }) {

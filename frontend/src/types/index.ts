@@ -18,8 +18,10 @@ export interface NotificationPreference {
   notifySecondUser: boolean
 }
 
-export type TaskKind = 'daily' | 'deadline'
+export type TaskKind = 'daily' | 'deadline' | 'shared'
 export type TaskStatus = 'open' | 'completed'
+/** Shared tasks only: one state for both people. Completion needs the other person's approval. */
+export type SharedState = 'active' | 'awaiting_approval' | 'completed'
 
 export interface Task extends NotificationPreference {
   id: string
@@ -32,11 +34,22 @@ export interface Task extends NotificationPreference {
   date: DateKey
   /** Optional planned time (`HH:mm`) for daily tasks. */
   time?: string
-  /** Deadline instant (ISO). Only for `kind === 'deadline'`. */
+  /** Deadline instant (ISO). Required for `deadline`, optional for `shared`. */
   dueAt?: string
   status: TaskStatus
   completedAt?: string
   completedBy?: UserId
+  /** `kind === 'shared'` only. */
+  sharedState?: SharedState
+  /** While awaiting approval: who asked, and when. */
+  completionRequestedBy?: UserId
+  completionRequestedAt?: string
+  /** After approval. */
+  approvedBy?: UserId
+  approvedAt?: string
+  /** After the latest rejection (cleared by the next request). */
+  rejectedBy?: UserId
+  rejectedAt?: string
 }
 
 export type TaskType = TaskKind | 'habit'
