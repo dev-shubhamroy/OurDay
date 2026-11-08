@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
   await Promise.all(
     subs.map(async (s) => {
       try {
-        await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 3600, urgency: n.kind === 'deadline' ? 'high' : 'normal' })
+        await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: n.kind === 'deadline' ? 300 : 3600, urgency: n.kind === 'deadline' ? 'high' : 'normal' })
         sent++
         await db.from('push_subscriptions').update({ last_success_at: new Date().toISOString() }).eq('id', s.id)
       } catch (e) {
