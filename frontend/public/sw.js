@@ -1,5 +1,5 @@
 /* OurDay service worker: app shell offline + Web Push.
- * __PRECACHE__ and __BUILD__ are filled in at build time by the `ourday-sw` Vite plugin (vite.config.ts).
+ * The precache list and the build id are filled in at build time by the `ourday-sw` Vite plugin (vite.config.ts).
  * It never touches Supabase/API traffic: data is cached by the app itself (see src/services/offline). */
 const BUILD = '__BUILD__'
 const PRECACHE = self.__PRECACHE__ || []

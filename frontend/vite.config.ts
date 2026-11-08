@@ -18,7 +18,7 @@ function ourdaySw(): Plugin {
       const html = readFileSync(join(outDir, 'index.html'), 'utf8')
       const build = String(Array.from(html + assets.join()).reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 7) >>> 0)
       const p = join(outDir, 'sw.js')
-      writeFileSync(p, `self.__PRECACHE__ = ${JSON.stringify([...assets, ...extra])};\n` + readFileSync(p, 'utf8').replace('__BUILD__', build))
+      writeFileSync(p, `self.__PRECACHE__ = ${JSON.stringify([...assets, ...extra])};\n` + readFileSync(p, 'utf8').replace("const BUILD = '__BUILD__'", `const BUILD = '${build}'`))
     },
   }
 }
