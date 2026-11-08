@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
       } catch (e) {
         const status = (e as { statusCode?: number }).statusCode
         if (status === 404 || status === 410) await db.from('push_subscriptions').delete().eq('id', s.id) // uninstalled / revoked
+        else console.error('web-push failed', { status: status ?? 'network', notification: n.id }) // 401/403 = VAPID mismatch, 429 = throttled (never logs endpoints or keys)
       }
     }),
   )
