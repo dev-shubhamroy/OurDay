@@ -36,3 +36,12 @@ Copy `frontend/.env.example` to `frontend/.env.local` and fill in the **public**
 cd frontend && npm test            # unit tests (streaks, grouping, mapping, sync reducer, ...)
 cd supabase/tests/local && npm install && npm test   # SQL migrations + security tests in an in-memory Postgres
 ```
+
+## Mac companion (RANA briefing)
+`macos/OurDayCompanion/` is a menu-bar app that shows RANA's executive briefing when you unlock your Mac and schedules local reminders. Pushing to GitHub does **not** update an installed copy; rebuild and reinstall it:
+```bash
+cd macos/OurDayCompanion
+./scripts/test.sh      # core checks (no Xcode needed)
+./scripts/install.sh   # builds, replaces ~/Applications/OurDay Companion.app, relaunches it
+```
+`install.sh` reads the public Supabase URL/publishable key from the git-ignored `frontend/.env.local`; no secret key is ever used.

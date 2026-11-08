@@ -33,6 +33,8 @@ struct Briefing: Equatable {
     var changes: [Change]
     var nextUp: DeadlineItem?
     var previousAt: Date?
+    /// The executive report the window renders (same data, structured; see ExecutiveReport.swift).
+    var report: ExecutiveReport
 }
 
 /// Persisted between launches. Holds ids and short status words only (no titles or other content).
@@ -184,7 +186,7 @@ enum BriefingEngine {
 
     // MARK: Build
 
-    static func build(snapshot s: DataSnapshot, now: Date, cal: Calendar, previous: BriefingState?) -> Briefing {
+    static func build(snapshot s: DataSnapshot, now: Date, cal: Calendar, previous: BriefingState?, stale: Bool = false) -> Briefing {
         let today = DayKey.key(now, cal), tomorrow = DayKey.add(today, 1, cal)
         let kind: BriefingKind = (previous?.userID == s.meID && previous?.day == today) ? .update : .full
 
@@ -235,7 +237,8 @@ enum BriefingEngine {
             completedDeadlinesToday: completedToday,
             tasksToday: tasksOn(today), tasksTomorrow: tasksOn(tomorrow),
             habits: myHabits, partnerName: s.partner.map { s.name(of: $0.id) }, together: together,
-            changes: changes, nextUp: active.first, previousAt: kind == .update ? previous?.at : nil)
+            changes: changes, nextUp: active.first, previousAt: kind == .update ? previous?.at : nil,
+            report: ExecutiveReportBuilder.build(snapshot: s, now: now, cal: cal, kind: kind, changes: changes, previousAt: kind == .update ? previous?.at : nil, stale: stale))
     }
 
     /// Same deterministic wording as frontend/src/services/rana.ts.

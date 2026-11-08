@@ -125,7 +125,7 @@ final class CompanionModel: ObservableObject {
             Log.info("load failed: \(e)")
             if let c = cache {
                 // Show what we last knew, rebuilt against the current clock, clearly marked as cached. Baseline is NOT advanced.
-                briefing = BriefingEngine.build(snapshot: c, now: now, cal: cal, previous: baseline)
+                briefing = BriefingEngine.build(snapshot: c, now: now, cal: cal, previous: baseline, stale: true)
                 cachedSince = c.fetchedAt; phase = .ready
                 await scheduler.apply(c)        // re-plan from what we know so expiry is still respected
                 Log.info("showing cached data from \(c.fetchedAt) cached=true")
