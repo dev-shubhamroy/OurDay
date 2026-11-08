@@ -6,6 +6,7 @@ import { UrgencyBadge } from '../components/tasks/UrgencyBadge'
 import { AuroraCard } from '../components/ui/AuroraCard'
 import { Button } from '../components/ui/Button'
 import { useApp } from '../hooks/useApp'
+import { useQuotes } from '../hooks/useQuotes'
 import { formatDeadline, formatLongDate, formatClock, formatRemaining } from '../services/dates'
 import { markBriefingSeen } from '../services/briefingSeen'
 import { scheduleLabel } from '../services/habits'
@@ -15,11 +16,15 @@ import { remainingMs, urgencyOf } from '../services/urgency'
 export default function Briefing() {
   const { tasks, habits, now, today, me } = useApp()
   const navigate = useNavigate()
+  const { quoteForBriefing, finishBriefing } = useQuotes()
+  // Stable for this briefing (survives refresh); a new one is picked for the next briefing.
+  const quote = useMemo(() => quoteForBriefing(today), [quoteForBriefing, today])
   const b = useMemo(() => buildBriefing(tasks, habits, now, me), [tasks, habits, now, me])
 
   const start = () => {
     markBriefingSeen(today)
-    navigate('/home', { replace: true })
+    finishBriefing()
+    navigate('/today', { replace: true })
   }
 
   return (
@@ -40,6 +45,13 @@ export default function Briefing() {
               ))}
             </div>
           </AuroraCard>
+          {quote && (
+            <figure className="mt-6 w-full px-1 animate-rise" style={{ animationDelay: '1s' }}>
+              <p className="eyebrow mb-2 text-accent">JUST KNOW THAT –</p>
+              <blockquote className="font-display text-xl font-semibold leading-snug tracking-tight sm:text-2xl">“{quote.text}”</blockquote>
+              {quote.author && <figcaption className="mt-2 text-sm text-muted">— {quote.author}</figcaption>}
+            </figure>
+          )}
           <Button size="lg" onClick={start} className="mt-6 w-full sm:w-auto">
             Let’s get started <ArrowRight className="h-5 w-5" />
           </Button>

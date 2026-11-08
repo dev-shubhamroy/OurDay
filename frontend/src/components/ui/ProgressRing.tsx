@@ -15,7 +15,7 @@ export function ProgressRing({ pct, size = 120, stroke = 10, children }: { pct: 
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c * (1 - pct / 100)}
-          style={{ transition: 'stroke-dashoffset .7s cubic-bezier(.2,.7,.2,1), stroke .3s', filter: 'drop-shadow(0 0 6px rgb(var(--accent) / .45))' }}
+          style={{ transition: 'stroke-dashoffset .7s cubic-bezier(.2,.7,.2,1), stroke .3s' }}
         />
       </svg>
       <div className="absolute inset-0 grid place-items-center">{children}</div>

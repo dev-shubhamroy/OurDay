@@ -45,7 +45,7 @@ export function AppShell() {
   }, [])
   const ui = useMemo(() => ({ openAddTask: () => setAddOpen(true), openEdit: (t: EditTarget) => setEditing(t), toast: showToast }), [showToast])
 
-  // PWA shortcut "Add task" opens /home?add=1
+  // PWA shortcut "Add task" opens /today?add=1
   useEffect(() => {
     const q = new URLSearchParams(search)
     if (q.get('add') === '1') {

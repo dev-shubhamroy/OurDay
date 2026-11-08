@@ -56,7 +56,7 @@ export default function App() {
                   <Route element={<BriefingGate />}>
                     <Route path="/briefing" element={<Briefing />} />
                     <Route element={<AppShell />}>
-                      <Route index element={<Navigate to="/home" replace />} />
+                      <Route index element={<Navigate to="/today" replace />} />
                       <Route path="/home" element={<Home />} />
                       <Route path="/today" element={<Today />} />
                       <Route path="/upcoming" element={<Upcoming />} />
@@ -66,7 +66,7 @@ export default function App() {
                       <Route path="/completed" element={<Completed />} />
                       <Route path="/past" element={<Past />} />
                       <Route path="/settings" element={<Settings />} />
-                      <Route path="*" element={<Navigate to="/home" replace />} />
+                      <Route path="*" element={<Navigate to="/today" replace />} />
                     </Route>
                   </Route>
                 </Route>

@@ -4,7 +4,7 @@ import { deflateSync } from 'node:zlib'
 import { writeFileSync, mkdirSync } from 'node:fs'
 
 const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]
-const C = { top: hex('#1a2a42'), bot: hex('#080d18'), face: hex('#0b1220'), cyan: hex('#27c8ff') }
+const C = { top: hex('#26262c'), bot: hex('#111113'), face: hex('#17171a'), cyan: hex('#ff6a6f') }
 
 const sdRound = (px, py, cx, cy, hw, hh, r) => {
   const qx = Math.abs(px - cx) - (hw - r), qy = Math.abs(py - cy) - (hh - r)

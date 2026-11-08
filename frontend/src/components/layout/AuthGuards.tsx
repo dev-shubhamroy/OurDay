@@ -31,7 +31,7 @@ export function PublicOnly() {
   if (status === 'loading') return <AuthSplash />
   if ((status === 'signedIn' && !recovering) || status === 'disabled') {
     const from = (location.state as { from?: string } | null)?.from
-    return <Navigate to={from && !from.startsWith('/login') ? from : '/home'} replace />
+    return <Navigate to={from && !from.startsWith('/login') ? from : '/today'} replace />
   }
   return <Outlet />
 }

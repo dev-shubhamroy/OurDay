@@ -27,6 +27,8 @@ final class CompanionModel: ObservableObject {
     private let coordinator: SessionCoordinator?
     private let data: DataClient?
     private let store: BriefingStateStore
+    private let quoteStore: QuoteStateStore
+    private var quotesCache: [QuoteRow] = []   // memory only; text is never written to disk
     private var cache: DataSnapshot?        // memory only; never written to disk
     private var loadTask: Task<Void, Never>?
     private var userID: String?
@@ -36,6 +38,7 @@ final class CompanionModel: ObservableObject {
     init() {
         transport = DebugTransport(URLSessionTransport())
         store = FileStateStore.standard()
+        quoteStore = FileQuoteStore.standard()
         if let cfg = AppConfig.load() {
             let c = SessionCoordinator(auth: AuthClient(config: cfg, transport: transport), storage: KeychainSessionStorage(), log: { Log.info($0) })
             coordinator = c
@@ -85,7 +88,7 @@ final class CompanionModel: ObservableObject {
     func signOut() async {
         await coordinator?.signOut()
         await scheduler.clearAll()
-        store.clear(); cache = nil; briefing = nil; cachedSince = nil; signedInEmail = nil; userID = nil; baseline = nil
+        store.clear(); quoteStore.clear(); quotesCache = []; cache = nil; briefing = nil; cachedSince = nil; signedInEmail = nil; userID = nil; baseline = nil
         phase = .signedOut(nil)
         Log.info("signed out; local session and briefing state removed")
     }
@@ -111,7 +114,8 @@ final class CompanionModel: ObservableObject {
             cache = snap; cachedSince = nil
             if newSession || baseline?.userID != uid { baseline = store.load(userID: uid) }
             let previous = baseline
-            let b = BriefingEngine.build(snapshot: snap, now: now, cal: cal, previous: previous)
+            await refreshQuotes(data: data)
+            let b = BriefingEngine.build(snapshot: snap, now: now, cal: cal, previous: previous, quote: quoteFor(uid: uid, previous: previous))
             briefing = b; phase = .ready
             store.save(BriefingEngine.stateAfter(snap, now: now, cal: cal))
             await scheduler.apply(snap)
@@ -125,12 +129,31 @@ final class CompanionModel: ObservableObject {
             Log.info("load failed: \(e)")
             if let c = cache {
                 // Show what we last knew, rebuilt against the current clock, clearly marked as cached. Baseline is NOT advanced.
-                briefing = BriefingEngine.build(snapshot: c, now: now, cal: cal, previous: baseline, stale: true)
+                briefing = BriefingEngine.build(snapshot: c, now: now, cal: cal, previous: baseline, stale: true, quote: quoteFor(uid: uid, previous: baseline))
                 cachedSince = c.fetchedAt; phase = .ready
                 await scheduler.apply(c)        // re-plan from what we know so expiry is still respected
                 Log.info("showing cached data from \(c.fetchedAt) cached=true")
             } else { phase = .failed(e) }
         }
+    }
+
+    // MARK: Inspiration Library
+
+    /// Reads this person's saved quotes. If the server can't be reached the last known list is kept; if the feature isn't deployed, there are none.
+    private func refreshQuotes(data: DataClient) async {
+        do { quotesCache = try await data.fetchQuotes() }
+        catch AppError.backendUnavailable { quotesCache = [] }
+        catch { Log.info("quotes unavailable (\(classify(error))); using the last known list (\(quotesCache.count))") }
+    }
+
+    /// One quote per briefing. The key is the previous briefing's timestamp, which is fixed for a briefing "session",
+    /// so Refresh keeps the same quote and the next unlock (a new baseline) picks a new one.
+    private func quoteFor(uid: String, previous: BriefingState?) -> QuoteLine? {
+        var sel = quoteStore.load(userID: uid)
+        let key = "\(uid)|\(previous.map { String(Int($0.at.timeIntervalSince1970)) } ?? "first")"
+        let q = QuoteSelector.select(quotesCache, key: key, selection: &sel)
+        quoteStore.save(sel, userID: uid)
+        return q
     }
 
     // MARK: Background sync (notifications): never touches the briefing baseline

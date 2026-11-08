@@ -1,10 +1,11 @@
-import { Bell, LogOut, Monitor, Moon, RotateCcw, Sun, User as UserIcon, Users } from 'lucide-react'
+import { Bell, LogOut, Monitor, Moon, Quote, RotateCcw, Sun, User as UserIcon, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
 import { Segmented } from '../components/ui/Controls'
 import { PageHeader } from '../components/ui/PageHeader'
 import { InvitePartner } from '../components/workspace/InvitePartner'
+import { InspirationLibrary } from '../components/settings/InspirationLibrary'
 import { NotificationSettings } from '../components/notifications/NotificationSettings'
 import { useNotifications } from '../hooks/useNotifications'
 import { useApp } from '../hooks/useApp'
@@ -86,6 +87,10 @@ export default function Settings() {
             <NotificationSettings />
           </Group>
         )}
+
+        <Group icon={<Quote className="h-4 w-4" />} title="Inspiration Library">
+          <InspirationLibrary />
+        </Group>
 
         <Group icon={<RotateCcw className="h-4 w-4" />} title="RANA">
           <p className="mb-3 text-sm text-muted">RANA greets you with a briefing on your first visit each day. Replay it any time.</p>

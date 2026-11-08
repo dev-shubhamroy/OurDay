@@ -145,3 +145,14 @@ extension DataClient {
         _ = try await send("POST", "notification_preferences?on_conflict=user_id", body: try JSONSerialization.data(withJSONObject: obj), prefer: "resolution=merge-duplicates,return=minimal")
     }
 }
+
+// MARK: Inspiration Library (read-only here; the web app manages the quotes)
+
+extension DataClient {
+    /// This person's own saved quotes (RLS: owner only). Throws .backendUnavailable if the table is not deployed yet.
+    func fetchQuotes() async throws -> [QuoteRow] {
+        let d = try await send("GET", "inspiration_quotes?select=id,text,author,created_at&order=created_at.asc&limit=500")
+        guard let rows = try? JSONDecoder().decode([QuoteRow].self, from: d) else { throw AppError.decoding }
+        return rows
+    }
+}

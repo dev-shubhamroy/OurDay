@@ -1,221 +1,204 @@
 import AppKit
+import CoreText
 import SwiftUI
 
-// RANA's executive briefing. A reporting surface, not a conversation: no chat bubbles, no input, no suggestions.
-// Everything shown comes from ExecutiveReport (deterministic, built from the user's real OurDay data).
+// RANA's briefing: a reporting surface (no chat, no input). Everything shown comes from ExecutiveReport, which is built
+// deterministically from the user's real OurDay data. Visual language: "Fusion" (graphite base, soft crimson accent,
+// colour-coded sections; Bricolage Grotesque for display, Inter for text). Dark only: the palette defines no light theme.
 
-/// Midnight Aurora tokens (same values as frontend/src/styles/index.css), resolved per appearance.
-struct Aurora {
-    let dark: Bool
-    var bg: Color { dark ? Color(r: 8, g: 13, b: 24) : Color(r: 244, g: 247, b: 252) }
-    var surface: Color { dark ? Color(r: 17, g: 31, b: 51) : .white }
-    var fg: Color { dark ? Color(r: 232, g: 240, b: 250) : Color(r: 14, g: 28, b: 46) }
-    var muted: Color { dark ? Color(r: 148, g: 167, b: 191) : Color(r: 82, g: 102, b: 128) }
-    var line: Color { dark ? Color(r: 120, g: 160, b: 210).opacity(0.16) : Color(r: 40, g: 80, b: 130).opacity(0.14) }
-    var accent: Color { dark ? Color(r: 39, g: 200, b: 255) : Color(r: 22, g: 141, b: 206) }
-    var violet: Color { dark ? Color(r: 119, g: 117, b: 255) : Color(r: 113, g: 101, b: 217) }
-    var ok: Color { dark ? Color(r: 66, g: 214, b: 150) : Color(r: 14, g: 130, b: 84) }
-    var warn: Color { dark ? Color(r: 255, g: 181, b: 71) : Color(r: 176, g: 100, b: 0) }
-    var danger: Color { dark ? Color(r: 255, g: 94, b: 108) : Color(r: 205, g: 45, b: 60) }
-    var card: Color { dark ? Color.white.opacity(0.045) : Color.white.opacity(0.78) }
+enum Fusion {
+    static func hex(_ v: UInt32) -> Color { Color(.sRGB, red: Double((v >> 16) & 255) / 255, green: Double((v >> 8) & 255) / 255, blue: Double(v & 255) / 255, opacity: 1) }
+    static let bg = hex(0x111113), surface = hex(0x17171A), chip = hex(0x202024), border = hex(0x2A2A30), pill = hex(0x1B1B1F)
+    static let text = hex(0xF3F3F5), textSecondary = hex(0xC7C7CF), muted = hex(0xA4A4AD)
+    static let accent = hex(0xFF6A6F), kicker = hex(0xFF7B7F), button = hex(0xD23B41)
+    // colour coding: band bg, band text, ring stroke, tag bg, tag text
+    static let urgentBand = hex(0x2A1618), urgentText = hex(0xFFB3B6), urgentRing = hex(0xE5484D), urgentTagBg = hex(0x3A1A1C), urgentTag = hex(0xFF9A9D)
+    static let todayBand = hex(0x142133), todayText = hex(0xB5D0FF), todayRing = hex(0x4C8DF6), todayTagBg = hex(0x1B2A44), todayTag = hex(0x9CC3FF)
+    static let habitBlock = hex(0x1E1838), habitText = hex(0xC9B8FF)
+    static let progressBlock = hex(0x11251C), progressText = hex(0x7BDDB6)
+
+    static func display(_ size: CGFloat, _ weight: Int) -> Font { .custom(weight >= 800 ? "BricolageGrotesque-ExtraBold" : weight >= 700 ? "BricolageGrotesque-Bold" : "BricolageGrotesque-Medium", fixedSize: size) }
+    static func body(_ size: CGFloat, _ weight: Int = 400, italic: Bool = false) -> Font {
+        .custom(italic ? "Inter-Italic" : weight >= 700 ? "Inter-Bold" : weight >= 600 ? "Inter-SemiBold" : weight >= 500 ? "Inter-Medium" : "Inter-Regular", fixedSize: size)
+    }
 }
-extension Color { init(r: Double, g: Double, b: Double) { self.init(.sRGB, red: r / 255, green: g / 255, blue: b / 255, opacity: 1) } }
+
+/// Registers the bundled Bricolage Grotesque and Inter files (Contents/Resources/Fonts) for this process.
+enum BrandFonts {
+    static func register() {
+        guard let dir = Bundle.main.resourceURL?.appendingPathComponent("Fonts"),
+              let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) else { return }
+        for f in files where f.pathExtension == "ttf" { CTFontManagerRegisterFontsForURL(f as CFURL, .process, nil) }
+    }
+}
 
 /// Drives the understated entrance. Sections fade/slide in once, staggered; Reduce Motion shows everything at once.
 final class Reveal: ObservableObject {
     @Published var shown = false
     let reduce = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-    func start() { if reduce { shown = true } else { withAnimation(.easeOut(duration: 0.5)) { shown = true } } }
+    func start() { if reduce { shown = true } else { withAnimation(.easeOut(duration: 0.45)) { shown = true } } }
 }
-
 private struct Entrance: ViewModifier {
     @ObservedObject var reveal: Reveal
     let index: Int
     func body(content: Content) -> some View {
-        content
-            .opacity(reveal.shown ? 1 : 0)
-            .offset(y: reveal.shown || reveal.reduce ? 0 : 10)
-            .animation(reveal.reduce ? nil : .easeOut(duration: 0.45).delay(0.06 * Double(index)), value: reveal.shown)
+        content.opacity(reveal.shown ? 1 : 0).offset(y: reveal.shown || reveal.reduce ? 0 : 8)
+            .animation(reveal.reduce ? nil : .easeOut(duration: 0.4).delay(0.05 * Double(index)), value: reveal.shown)
     }
 }
 extension View { fileprivate func entrance(_ r: Reveal, _ i: Int) -> some View { modifier(Entrance(reveal: r, index: i)) } }
 
-/// RANA's mark: a calm visor with two cyan eyes (same identity as the web app), softly lit.
-struct RanaMark: View {
-    let a: Aurora; var size: CGFloat = 52
+private struct Ring: View {
+    let color: Color
+    var body: some View { Circle().stroke(color, lineWidth: 1.8).frame(width: 18, height: 18) }
+}
+private struct Tag: View {
+    let text: String; let fg: Color; let bg: Color; var upper = true; var font: Font = Fusion.body(11, 700)
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.3, style: .continuous)
-                .fill(LinearGradient(colors: [a.dark ? Color(r: 26, g: 42, b: 66) : Color(r: 30, g: 52, b: 82), Color(r: 8, g: 13, b: 24)], startPoint: .topLeading, endPoint: .bottomTrailing))
-            RoundedRectangle(cornerRadius: size * 0.2, style: .continuous).fill(Color(r: 11, g: 18, b: 32))
-                .overlay(RoundedRectangle(cornerRadius: size * 0.2, style: .continuous).stroke(Color(r: 39, g: 200, b: 255).opacity(0.5), lineWidth: 1.2))
-                .frame(width: size * 0.64, height: size * 0.42)
-            HStack(spacing: size * 0.17) {
-                Capsule().fill(Color(r: 39, g: 200, b: 255)).frame(width: size * 0.11, height: size * 0.15)
-                Capsule().fill(Color(r: 39, g: 200, b: 255)).frame(width: size * 0.11, height: size * 0.15)
-            }
-        }
-        .frame(width: size, height: size)
-        .shadow(color: Color(r: 39, g: 200, b: 255).opacity(a.dark ? 0.35 : 0.2), radius: 14, y: 4)
-        .accessibilityLabel("RANA")
+        Text(upper ? text.uppercased() : text).font(font).tracking(upper ? 0.9 : 0).foregroundColor(fg)
+            .padding(.horizontal, 10).padding(.vertical, 4).background(Capsule().fill(bg))
     }
 }
 
-struct ReportSection<Content: View>: View {
-    let a: Aurora; let title: String; var trailing: String? = nil
+/// Card with a coloured header band (icon + title) and a body.
+struct BandCard<Body: View>: View {
+    let icon: String; let title: String; let band: Color; let bandText: Color
+    @ViewBuilder var content: Body
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: icon).font(.system(size: 17, weight: .regular)).foregroundColor(bandText)
+                Text(title).font(Fusion.display(17, 700)).foregroundColor(bandText).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18).padding(.vertical, 14).frame(maxWidth: .infinity, alignment: .leading).background(band)
+            VStack(alignment: .leading, spacing: 8) { content }.padding(.horizontal, 18).padding(.vertical, 14).frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Fusion.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Fusion.border, lineWidth: 1))
+    }
+}
+
+/// Short list stays plain; a long one scrolls inside its card.
+struct LimitedList<Content: View>: View {
+    let count: Int; let rowHeight: CGFloat; let visibleRows: Int
     @ViewBuilder var content: Content
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Text(title.uppercased()).font(.system(size: 11, weight: .semibold)).tracking(1.6).foregroundColor(a.accent)
-                Rectangle().fill(a.line).frame(height: 1)
-                if let trailing { Text(trailing).font(.system(size: 11)).foregroundColor(a.muted) }
-            }
-            content
-        }
+        if count > visibleRows {
+            ScrollView(showsIndicators: true) { VStack(alignment: .leading, spacing: 8) { content }.padding(.trailing, 6) }
+                .frame(height: CGFloat(visibleRows) * rowHeight + CGFloat(visibleRows - 1) * 8)
+        } else { VStack(alignment: .leading, spacing: 8) { content } }
     }
 }
 
-struct StatTile: View {
-    let a: Aurora; let s: ReportStat
-    var tone: Color { s.tone == .alert ? a.danger : s.tone == .good ? a.ok : a.fg }
+private struct ChipRow<Lead: View, Trail: View, Main: View>: View {
+    @ViewBuilder var lead: Lead; @ViewBuilder var main: Main; @ViewBuilder var trail: Trail
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text("\(s.value)").font(.system(size: 30, weight: .semibold)).monospacedDigit().foregroundColor(tone)
-            Text(s.label).font(.system(size: 11)).foregroundColor(a.muted).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, minHeight: 66, alignment: .topLeading)
-        .padding(.horizontal, 12).padding(.vertical, 11)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(a.card))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(s.tone == .alert ? a.danger.opacity(0.45) : a.line, lineWidth: 1))
-        .accessibilityElement(children: .combine)
+        HStack(spacing: 12) { lead; main; Spacer(minLength: 8); trail }
+            .padding(.horizontal, 14).padding(.vertical, 10).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Fusion.chip))
+            .accessibilityElement(children: .combine)
     }
 }
 
-struct ScheduleRow: View {
-    let a: Aurora; let e: ScheduleEntry
-    var tint: Color {
-        switch e.state { case .critical, .overdue: return a.danger; case .approaching: return a.warn; case .completed: return a.ok; case .upcoming: return a.accent }
-    }
-    var label: String? {
-        switch e.state { case .critical: return "Critical"; case .approaching: return "Approaching"; case .overdue: return "Overdue"; case .completed: return "Completed"; case .upcoming: return nil }
-    }
+struct AttentionRow: View {
+    let i: AttentionItem
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            RoundedRectangle(cornerRadius: 2).fill(tint).frame(width: 3, height: 38)
-                .shadow(color: (e.state == .critical || e.state == .overdue) ? tint.opacity(0.6) : .clear, radius: 5)
+        ChipRow(lead: { Ring(color: Fusion.urgentRing) }, main: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(e.title).font(.system(size: 14, weight: .medium)).foregroundColor(e.state == .completed ? a.muted : a.fg).lineLimit(2)
-                Text(e.detail + (e.ownerName.map { " · \($0)" } ?? "")).font(.system(size: 12)).foregroundColor(e.state == .critical || e.state == .overdue ? tint : a.muted)
+                Text(i.title).font(Fusion.body(16, 500)).foregroundColor(Fusion.text).lineLimit(2)
+                if i.level != .overdue || i.detail.contains(",") { Text(i.detail + (i.ownerName.map { " · \($0)" } ?? "")).font(Fusion.body(13)).foregroundColor(Fusion.muted).lineLimit(1) }
             }
-            Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(e.timeText).font(.system(size: 14, weight: .semibold)).monospacedDigit().foregroundColor(e.state == .completed ? a.muted : a.fg)
-                if let label { Text(label.uppercased()).font(.system(size: 9, weight: .bold)).tracking(0.8).foregroundColor(tint) }
+        }, trail: { Tag(text: i.status, fg: Fusion.urgentTag, bg: Fusion.urgentTagBg) })
+    }
+}
+
+struct PlanRow: View {
+    let e: ScheduleEntry
+    var body: some View {
+        ChipRow(lead: { Ring(color: Fusion.todayRing) }, main: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(e.title).font(Fusion.body(18, 600)).foregroundColor(Fusion.text).lineLimit(2)
+                Text(e.detail + (e.ownerName.map { " · \($0)" } ?? "")).font(Fusion.body(13)).foregroundColor(Fusion.muted)
             }
+        }, trail: { Tag(text: e.timeText, fg: Fusion.todayTag, bg: Fusion.todayTagBg, upper: false, font: Fusion.body(13, 600)) })
+    }
+}
+
+/// Small card: a 64pt coloured icon block on the left, text on the right.
+struct SideCard<Body: View>: View {
+    let icon: String; let block: Color; let iconColor: Color
+    @ViewBuilder var content: Body
+    var body: some View {
+        HStack(spacing: 0) {
+            ZStack { block; Image(systemName: icon).font(.system(size: 24, weight: .light)).foregroundColor(iconColor) }.frame(width: 64)
+            VStack(alignment: .leading, spacing: 4) { content }.padding(.horizontal, 20).padding(.vertical, 14).frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(a.card))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(a.line, lineWidth: 1))
-        .accessibilityElement(children: .combine)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+        .background(Fusion.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Fusion.border, lineWidth: 1))
     }
 }
 
 struct ReportView: View {
-    let a: Aurora; let r: ExecutiveReport; let reveal: Reveal
-    private func dot(_ c: Color) -> some View { Circle().fill(c).frame(width: 6, height: 6).padding(.top, 6) }
-    private func line(_ t: String, _ c: Color) -> some View {
-        HStack(alignment: .top, spacing: 10) { dot(c); Text(t).font(.system(size: 13.5)).foregroundColor(a.fg).fixedSize(horizontal: false, vertical: true) }
+    let r: ExecutiveReport; let reveal: Reveal
+    private var emptyDay: Bool { r.attention.isEmpty && r.schedule.isEmpty }
+
+    /// "You forgot to do Meditation yesterday." with the habit name highlighted.
+    private func habitLine(_ i: Int) -> Text {
+        let sentence = r.missedHabits[i]
+        let title = i < r.missedHabitTitles.count ? r.missedHabitTitles[i] : ""
+        guard !title.isEmpty, let range = sentence.range(of: title) else { return Text(sentence) }
+        return Text(String(sentence[..<range.lowerBound])) + Text(title).foregroundColor(Fusion.habitText).fontWeight(.semibold) + Text(String(sentence[range.upperBound...]))
+    }
+    private func partnerText(_ line: String, name: String) -> String {
+        guard line.hasPrefix(name + " ") else { return line }
+        let rest = String(line.dropFirst(name.count + 1)); return rest.prefix(1).uppercased() + rest.dropFirst()
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(r.greeting).font(.system(size: 28, weight: .semibold)).foregroundColor(a.fg)
-                Text(r.intro).font(.system(size: 14)).foregroundColor(a.muted).fixedSize(horizontal: false, vertical: true)
-            }.entrance(reveal, 0)
-
-            if !r.stats.isEmpty {
-                ReportSection(a: a, title: "Executive summary") {
-                    HStack(alignment: .top, spacing: 10) { ForEach(r.stats) { StatTile(a: a, s: $0) } }
-                }.entrance(reveal, 1)
+        VStack(alignment: .leading, spacing: 18) {
+            if let q = r.quote {      // plain text on the background: kicker, quote, author
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("JUST KNOW THAT –").font(Fusion.body(12, 600)).tracking(1.9).foregroundColor(Fusion.kicker)
+                    Text("“\(q.text)”").font(Fusion.display(31, 500)).tracking(-0.3).lineSpacing(3).foregroundColor(Fusion.text).fixedSize(horizontal: false, vertical: true)
+                    if let author = q.author { Text("— \(author)").font(Fusion.body(14)).foregroundColor(Fusion.muted) }
+                }.accessibilityElement(children: .combine).entrance(reveal, 1)
             }
 
-            if !r.priority.isEmpty {
-                ReportSection(a: a, title: "Priority report") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(r.priority) { p in line(p.text, p.level == .urgent ? a.danger : p.level == .attention ? a.warn : a.accent) }
+            HStack(alignment: .top, spacing: 18) {
+                if !r.attention.isEmpty {
+                    BandCard(icon: "exclamationmark.triangle", title: ExecutiveReport.attentionIntro, band: Fusion.urgentBand, bandText: Fusion.urgentText) {
+                        LimitedList(count: r.attention.count, rowHeight: 48, visibleRows: 5) { ForEach(r.attention) { AttentionRow(i: $0) } }
                     }
-                }.entrance(reveal, 2)
-            }
-
-            if r.kind == .full, let head = r.scheduleHeadline {
-                ReportSection(a: a, title: "Today’s schedule") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(head).font(.system(size: 13.5)).foregroundColor(a.muted)
-                        ForEach(r.schedule) { ScheduleRow(a: a, e: $0) }
-                        if r.scheduleMore > 0 { Text("+ \(r.scheduleMore) more today").font(.system(size: 12)).foregroundColor(a.muted) }
-                        if !r.otherTasks.isEmpty {
-                            Text("Also planned today").font(.system(size: 12, weight: .semibold)).foregroundColor(a.muted).padding(.top, 4)
-                            ForEach(r.otherTasks) { t in
-                                HStack(spacing: 8) {
-                                    Image(systemName: "circle").font(.system(size: 9)).foregroundColor(a.muted)
-                                    Text(t.title).font(.system(size: 13)).foregroundColor(a.fg).lineLimit(1)
-                                    Spacer()
-                                    if let o = t.ownerName { Text(o).font(.system(size: 11)).foregroundColor(a.muted) }
-                                    if let tt = t.timeText { Text(tt).font(.system(size: 12)).monospacedDigit().foregroundColor(a.muted) }
-                                }
-                            }
-                            if r.otherTasksMore > 0 { Text("+ \(r.otherTasksMore) more").font(.system(size: 12)).foregroundColor(a.muted) }
-                        }
-                        if let t = r.tomorrowLine { Text(t).font(.system(size: 12.5)).foregroundColor(a.muted).padding(.top, 2) }
+                }
+                if r.kind == .full && (!r.schedule.isEmpty || emptyDay) {
+                    BandCard(icon: "calendar", title: r.schedule.isEmpty ? (r.emptyDayNote ?? "Nothing is scheduled for today.") : ExecutiveReport.scheduleIntro, band: Fusion.todayBand, bandText: Fusion.todayText) {
+                        if !r.schedule.isEmpty { LimitedList(count: r.schedule.count, rowHeight: 62, visibleRows: 4) { ForEach(r.schedule) { PlanRow(e: $0) } } }
                     }
-                }.entrance(reveal, 3)
-            }
-
-            if r.kind == .update { updateSections }
-
-            if !r.habits.isEmpty {
-                ReportSection(a: a, title: "Habits") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        if let s = r.habitsSummary { Text(s).font(.system(size: 13.5)).foregroundColor(a.muted) }
-                        ForEach(r.habits) { h in
-                            HStack(spacing: 10) {
-                                Image(systemName: h.state == .done ? "checkmark.circle.fill" : h.state == .missed ? "xmark.circle" : "circle")
-                                    .foregroundColor(h.state == .done ? a.ok : h.state == .missed ? a.warn : a.muted)
-                                Text(h.title).font(.system(size: 13.5)).foregroundColor(h.state == .done ? a.muted : a.fg)
-                                Spacer()
-                                if let p = h.partnerLine { Text(p).font(.system(size: 11.5)).foregroundColor(a.muted) }
-                                if h.streak > 0 { Text("\(h.streak)-day streak").font(.system(size: 11.5)).foregroundColor(a.warn) }
-                            }
-                        }
+                }
+                if r.kind == .update && (!r.ownChanges.isEmpty) {
+                    BandCard(icon: "calendar", title: r.sinceTitle ?? "What changed", band: Fusion.todayBand, bandText: Fusion.todayText) {
+                        ForEach(r.ownChanges, id: \.self) { Text($0).font(Fusion.body(15)).foregroundColor(Fusion.text).fixedSize(horizontal: false, vertical: true) }
                     }
-                }.entrance(reveal, 4)
-            }
+                }
+            }.entrance(reveal, 2)
 
-            if !r.partner.isEmpty, let p = r.partnerName {
-                ReportSection(a: a, title: "Partner updates", trailing: p) {
-                    VStack(alignment: .leading, spacing: 8) { ForEach(r.partner, id: \.self) { line($0, a.violet) } }
-                }.entrance(reveal, 5)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Rectangle().fill(a.line).frame(height: 1)
-                Text(r.closing).font(.system(size: 13.5)).foregroundColor(a.fg).fixedSize(horizontal: false, vertical: true)
-                Text("RANA").font(.system(size: 10, weight: .semibold)).tracking(2).foregroundColor(a.accent)
-            }.entrance(reveal, 6)
-        }
-    }
-
-    @ViewBuilder var updateSections: some View {
-        if !r.ownChanges.isEmpty {
-            ReportSection(a: a, title: "What changed") { VStack(alignment: .leading, spacing: 8) { ForEach(r.ownChanges, id: \.self) { line($0, a.accent) } } }.entrance(reveal, 3)
-        }
-        if !r.partnerChanges.isEmpty {
-            ReportSection(a: a, title: "Partner updates", trailing: r.partnerName) { VStack(alignment: .leading, spacing: 8) { ForEach(r.partnerChanges, id: \.self) { line($0, a.violet) } } }.entrance(reveal, 4)
-        }
-        if let n = r.nextDeadline {
-            ReportSection(a: a, title: "Next deadline") { ScheduleRow(a: a, e: n) }.entrance(reveal, 5)
+            HStack(alignment: .top, spacing: 18) {
+                if !r.missedHabits.isEmpty {
+                    SideCard(icon: "leaf", block: Fusion.habitBlock, iconColor: Fusion.habitText) {
+                        ForEach(r.missedHabits.indices, id: \.self) { habitLine($0).font(Fusion.body(16)).foregroundColor(Fusion.text).fixedSize(horizontal: false, vertical: true) }
+                    }
+                }
+                if let p = r.partnerName, !(r.kind == .full ? r.partnerLines : r.partnerChanges).isEmpty {
+                    SideCard(icon: "heart", block: Fusion.progressBlock, iconColor: Fusion.progressText) {
+                        Text(p).font(Fusion.display(18, 700)).foregroundColor(Fusion.text)
+                        ForEach(r.kind == .full ? r.partnerLines : r.partnerChanges, id: \.self) { Text(partnerText($0, name: p)).font(Fusion.body(14)).foregroundColor(Fusion.muted).fixedSize(horizontal: false, vertical: true) }
+                    }
+                }
+            }.entrance(reveal, 3)
         }
     }
 }
@@ -224,85 +207,77 @@ struct BriefingRoot: View {
     @ObservedObject var model: CompanionModel
     var openDashboard: () -> Void
     var dismiss: () -> Void
-    @Environment(\.colorScheme) private var scheme
     @StateObject private var reveal = Reveal()
-    private var a: Aurora { Aurora(dark: scheme == .dark) }
 
     var body: some View {
         ZStack {
-            background
+            Fusion.bg.ignoresSafeArea()
             VStack(alignment: .leading, spacing: 0) {
-                header.padding(.horizontal, 28).padding(.top, 26).padding(.bottom, 14)
+                top.padding(.horizontal, 48).padding(.top, 36).padding(.bottom, 18)
                 if let since = model.cachedSince {
                     Text("Couldn’t reach OurDay. This report uses data saved at \(BriefingEngine.timeText(since, .autoupdatingCurrent)).")
-                        .font(.system(size: 12)).foregroundColor(a.warn).padding(10).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(a.warn.opacity(0.14))).padding(.horizontal, 28).padding(.bottom, 10)
+                        .font(Fusion.body(13)).foregroundColor(Fusion.urgentTag).padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Fusion.urgentBand)).padding(.horizontal, 48).padding(.bottom, 14)
                 }
-                ScrollView(showsIndicators: false) { content.padding(.horizontal, 28).padding(.bottom, 24).frame(maxWidth: .infinity, alignment: .leading) }
-                footer.padding(.horizontal, 28).padding(.vertical, 14)
+                ScrollView(showsIndicators: false) { content.padding(.horizontal, 48).frame(maxWidth: .infinity, alignment: .leading) }
+                footer.padding(.horizontal, 48).padding(.top, 14).padding(.bottom, 26)
             }
         }
-        .frame(minWidth: 520, minHeight: 520)
+        .frame(minWidth: 760, minHeight: 560)
+        .preferredColorScheme(.dark)
         .onAppear { reveal.start() }
     }
 
-    var background: some View {
-        ZStack {
-            a.bg
-            RadialGradient(colors: [a.accent.opacity(a.dark ? 0.20 : 0.15), .clear], center: .topTrailing, startRadius: 0, endRadius: 520)
-            RadialGradient(colors: [a.violet.opacity(a.dark ? 0.19 : 0.13), .clear], center: .bottomLeading, startRadius: 0, endRadius: 520)
-        }.ignoresSafeArea()
-    }
-
-    var header: some View {
-        HStack(spacing: 14) {
-            RanaMark(a: a, size: 50)
-            VStack(alignment: .leading, spacing: 3) {
-                Text("RANA").font(.system(size: 17, weight: .bold)).tracking(3).foregroundColor(a.fg)
-                Text(eyebrow.uppercased()).font(.system(size: 10.5, weight: .semibold)).tracking(1.6).foregroundColor(a.accent)
+    /// Greeting (left) and date pill (right).
+    var top: some View {
+        HStack(alignment: .top) {
+            if let r = model.briefing?.report {
+                (Text(r.greetingLead + " ").foregroundColor(Fusion.text) + Text(r.greetingName).foregroundColor(Fusion.accent))
+                    .font(Fusion.display(50, 800)).tracking(-1.75).lineLimit(2).minimumScaleFactor(0.6).fixedSize(horizontal: false, vertical: true)
             }
-            Spacer()
-            if let b = model.briefing { Text(b.report.dateLine).font(.system(size: 12.5, weight: .medium)).foregroundColor(a.muted) }
+            Spacer(minLength: 16)
+            HStack(spacing: 8) {
+                Image(systemName: "calendar").font(.system(size: 13))
+                Text(model.briefing?.report.dateLine ?? ExecutiveReportBuilder.dateLine(Date(), .autoupdatingCurrent)).font(Fusion.body(14))
+            }
+            .foregroundColor(Fusion.muted).padding(.horizontal, 16).padding(.vertical, 8)
+            .background(Capsule().fill(Fusion.pill)).overlay(Capsule().stroke(Fusion.border, lineWidth: 1))
+            .padding(.top, 4)
         }
-    }
-
-    var eyebrow: String {
-        switch model.phase {
-        case .ready: return model.briefing?.kind == .update ? "Update report" : "Daily executive briefing"
-        case .signedOut, .signingIn: return "Sign in required"
-        case .loading: return "Preparing your report"
-        case .failed: return "Report unavailable"
-        }
+        .entrance(reveal, 0)
     }
 
     @ViewBuilder var content: some View {
         switch model.phase {
-        case .signedOut(let note): SignInView(model: model, note: note)
-        case .signingIn: SignInView(model: model, note: nil)
+        case .signedOut(let note): SignInView(model: model, note: note).foregroundColor(Fusion.text)
+        case .signingIn: SignInView(model: model, note: nil).foregroundColor(Fusion.text)
         case .loading:
-            if let b = model.briefing { ReportView(a: a, r: b.report, reveal: reveal) }
-            else { HStack(spacing: 10) { ProgressView().controlSize(.small); Text("Reviewing your schedule…").foregroundColor(a.muted) } }
+            if let b = model.briefing { ReportView(r: b.report, reveal: reveal) }
+            else { HStack(spacing: 10) { ProgressView().controlSize(.small); Text("Reviewing your schedule…").font(Fusion.body(14)).foregroundColor(Fusion.muted) } }
         case .ready:
-            if let b = model.briefing { ReportView(a: a, r: b.report, reveal: reveal) }
+            if let b = model.briefing { ReportView(r: b.report, reveal: reveal) }
         case .failed(let e):
             VStack(alignment: .leading, spacing: 8) {
-                Text(e.userMessage).foregroundColor(a.warn)
-                if e == .offline { Text("No saved data to report yet. The briefing will be available once OurDay can be reached.").font(.callout).foregroundColor(a.muted) }
+                Text(e.userMessage).font(Fusion.body(15)).foregroundColor(Fusion.urgentTag)
+                if e == .offline { Text("No saved data to report yet. The briefing will be available once OurDay can be reached.").font(Fusion.body(13)).foregroundColor(Fusion.muted) }
             }
         }
     }
 
+    /// Closing line (left); Open dashboard and Dismiss (right).
     var footer: some View {
-        HStack {
-            Button("Open dashboard", action: openDashboard).buttonStyle(.plain).font(.system(size: 12.5)).foregroundColor(a.muted)
-            if case .failed = model.phase { Button("Try again") { Task { await model.loadBriefing(newSession: false) } }.buttonStyle(.plain).font(.system(size: 12.5)).foregroundColor(a.accent).padding(.leading, 12) }
-            Spacer()
+        HStack(spacing: 18) {
+            Text(model.briefing?.report.closing ?? "").font(Fusion.body(16, italic: true)).foregroundColor(Fusion.textSecondary).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 12)
+            if case .failed = model.phase { Button("Try again") { Task { await model.loadBriefing(newSession: false) } }.buttonStyle(.plain).font(Fusion.body(14, 600)).foregroundColor(Fusion.accent) }
+            Button(action: openDashboard) {
+                HStack(spacing: 6) { Text("Open dashboard").font(Fusion.body(14, 600)); Image(systemName: "arrow.up.right.square").font(.system(size: 13)) }.foregroundColor(Fusion.text)
+            }.buttonStyle(.plain)
             Button(action: dismiss) {
-                Text("Dismiss").font(.system(size: 13, weight: .semibold)).foregroundColor(a.dark ? Color(r: 4, g: 20, b: 32) : .white)
-                    .frame(minWidth: 96).padding(.vertical, 9).padding(.horizontal, 8)
-                    .background(Capsule().fill(a.accent))
-            }
-            .buttonStyle(.plain).keyboardShortcut(.cancelAction)
+                Text("Dismiss").font(Fusion.display(16, 700)).foregroundColor(.white).frame(minWidth: 118, minHeight: 46)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Fusion.button))
+            }.buttonStyle(.plain).keyboardShortcut(.cancelAction)
         }
+        .entrance(reveal, 4)
     }
 }

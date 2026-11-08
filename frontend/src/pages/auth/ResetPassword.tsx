@@ -58,7 +58,7 @@ export default function ResetPassword() {
     setBusy(false)
     if (r.error) return setError(r.error)
     setDone(true)
-    setTimeout(() => navigate('/home', { replace: true }), 1200)
+    setTimeout(() => navigate('/today', { replace: true }), 1200)
   }
 
   return (

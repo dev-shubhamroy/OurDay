@@ -29,15 +29,17 @@ export default {
         danger: token('danger'),
         partner: token('partner'),
         'on-fill': token('on-fill'),
+        /** Solid call-to-action fill (primary buttons). */
+        button: token('button'),
       },
       fontFamily: {
         sans: ['"Inter Variable"', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['"Manrope Variable"', '"Inter Variable"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Bricolage Grotesque Variable"', '"Inter Variable"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
-        /** Main surfaces 20px, small cards/rows 14px, controls 14px, inputs 12px. */
-        card: '20px',
-        tile: '14px',
+        /** Fusion: cards 16px, task chips 12px, buttons 14px; pills fully round. */
+        card: '16px',
+        tile: '12px',
         ctl: '14px',
       },
       boxShadow: {

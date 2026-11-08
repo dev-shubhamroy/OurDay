@@ -12,7 +12,7 @@ import { NotifyBell } from './NotifyBell'
 import { SwipeRow } from './SwipeRow'
 import { UrgencyBadge } from './UrgencyBadge'
 
-export function DeadlineCard({ task, subdued }: { task: Task; subdued?: boolean }) {
+export function DeadlineCard({ task, subdued, dayLabel }: { task: Task; subdued?: boolean; dayLabel?: 'Today' | 'Tomorrow' }) {
   const { now, today, toggleTask, userById } = useApp()
   const urgency = urgencyOf(task, now)
   const done = task.status === 'completed'
@@ -27,8 +27,11 @@ export function DeadlineCard({ task, subdued }: { task: Task; subdued?: boolean 
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {formatDeadline(task.dueAt!, today)}
+              {dayLabel ? formatTime(task.dueAt!) : formatDeadline(task.dueAt!, today)}
             </span>
+            {dayLabel && (
+              <span className={cn('rounded-full border px-2 py-px text-[10px] font-semibold uppercase tracking-wide', dayLabel === 'Today' ? 'border-accent/40 bg-accent/10 text-accent' : 'border-line/20 bg-line/10 text-muted')}>{dayLabel}</span>
+            )}
             {done ? (
               <span className="font-medium text-ok">Completed at {formatTime(task.completedAt!)}</span>
             ) : (

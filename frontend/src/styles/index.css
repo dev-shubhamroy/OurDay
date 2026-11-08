@@ -3,80 +3,88 @@
 @tailwind utilities;
 
 /*
- * Midnight Aurora design tokens.
- * Colours are RGB channels so Tailwind alpha utilities work (e.g. bg-accent/20).
- * Change colours here only; components reference the Tailwind names in tailwind.config.ts.
+ * OurDay "Fusion" design tokens (graphite base, soft crimson accent, colour-coded sections).
+ * Colours are RGB channels so Tailwind alpha utilities work (e.g. bg-accent/20). Change colours here only;
+ * components reference the Tailwind names in tailwind.config.ts. The dark values are the approved palette;
+ * the light theme is a derived counterpart (same hues, adjusted lightness) because the palette defines none.
+ *
+ * Roles
+ *   bg / surface / elevated(card chip) / line(border)   base surfaces
+ *   fg / muted                                          text
+ *   accent (soft crimson) / button (solid CTA)          brand
+ *   danger = urgent / overdue, electric = today (blue), accent-2 = habit (violet), ok = progress (green)
  */
 :root,
 [data-theme='dark'] {
   color-scheme: dark;
-  --bg: 8 13 24; /* #080D18 */
-  --sidebar: 13 23 39; /* #0D1727 */
-  --surface: 17 31 51; /* #111F33 */
-  --elevated: 25 43 67; /* #192B43 */
-  --accent: 39 200 255; /* #27C8FF primary */
-  --accent-2: 119 117 255; /* #7775FF secondary (violet) */
-  --electric: 77 159 255; /* #4D9FFF */
-  --glow: 169 223 255; /* #A9DFFF */
-  --accent-fg: 4 20 32;
-  --fg: 232 240 250;
-  --muted: 148 167 191;
-  --line: 120 160 210;
+  --bg: 17 17 19; /* #111113 window background */
+  --sidebar: 23 23 26; /* #17171A */
+  --surface: 23 23 26; /* #17171A card body */
+  --elevated: 32 32 36; /* #202024 chips / task rows */
+  --accent: 255 106 111; /* #FF6A6F brand red */
+  --button: 210 59 65; /* #D23B41 primary button */
+  --accent-2: 201 184 255; /* #C9B8FF habit violet */
+  --electric: 76 141 246; /* #4C8DF6 today blue */
+  --glow: 255 179 182; /* #FFB3B6 urgent band text */
+  --accent-fg: 255 255 255;
+  --fg: 243 243 245; /* #F3F3F5 */
+  --muted: 164 164 173; /* #A4A4AD */
+  --line: 255 255 255; /* used at low alpha: reads as the #2A2A30 border on the surfaces */
   /* semantic */
-  --ok: 66 214 150;
-  --warn: 255 181 71;
-  --danger: 255 94 108;
-  --partner: 77 159 255; /* partner activity: cyan/blue */
-  --on-fill: 6 19 31; /* text on saturated status fills */
-  /* atmosphere */
-  --glass: 13 23 39;
-  --aura-a: 39 200 255;
-  --aura-b: 119 117 255;
-  --aura-a-alpha: 0.22;
-  --aura-b-alpha: 0.21;
-  /* elevation */
-  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 24px -12px rgb(0 0 0 / 0.55);
-  --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 4px 10px -2px rgb(0 0 0 / 0.35), 0 18px 36px -14px rgb(0 0 0 / 0.65);
-  --shadow-glow: 0 0 0 1px rgb(39 200 255 / 0.28), 0 8px 26px -8px rgb(39 200 255 / 0.5);
-  --shadow-float: 0 24px 60px -20px rgb(0 0 0 / 0.75);
-  /* Aurora cards: dark theme gets the more visible glow. */
-  --glow-k: 1;
-  --wash-k: 1;
-  --glow-size: 30px;
+  --ok: 123 221 182; /* #7BDDB6 progress green */
+  --warn: 255 181 71; /* amber: not part of the palette, kept only for "approaching" */
+  --danger: 229 72 77; /* #E5484D urgent / overdue */
+  --partner: 201 184 255; /* partner activity */
+  --on-fill: 17 17 19; /* text on saturated status fills */
+  /* surfaces for overlays: solid, no blur */
+  --glass: 23 23 26;
+  /* no atmospheric lighting */
+  --aura-a: 255 106 111;
+  --aura-b: 201 184 255;
+  --aura-a-alpha: 0;
+  --aura-b-alpha: 0;
+  /* elevation: flat; a hairline shadow only */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-lift: 0 4px 14px -4px rgb(0 0 0 / 0.5);
+  --shadow-glow: none;
+  --shadow-float: 0 18px 48px -16px rgb(0 0 0 / 0.7);
+  --glow-k: 0;
+  --wash-k: 0;
+  --glow-size: 0px;
 }
 
 [data-theme='light'] {
   color-scheme: light;
-  --bg: 244 247 252; /* #F4F7FC */
-  --sidebar: 255 255 255; /* #FFFFFF */
-  --surface: 255 255 255; /* #FFFFFF */
-  --elevated: 227 236 248; /* #E3ECF8 */
-  --accent: 22 141 206; /* #168DCE */
-  --accent-2: 113 101 217; /* #7165D9 */
-  --electric: 54 125 209; /* #367DD1 */
-  --glow: 220 239 255; /* #DCEFFF */
+  --bg: 247 247 248;
+  --sidebar: 255 255 255;
+  --surface: 255 255 255;
+  --elevated: 240 240 243;
+  --accent: 214 69 76;
+  --button: 210 59 65;
+  --accent-2: 105 84 200;
+  --electric: 38 100 210;
+  --glow: 170 40 48;
   --accent-fg: 255 255 255;
-  --fg: 14 28 46;
-  --muted: 82 102 128;
-  --line: 40 80 130;
-  --ok: 14 130 84;
+  --fg: 17 17 19;
+  --muted: 100 100 110;
+  --line: 0 0 0;
+  --ok: 20 120 80;
   --warn: 176 100 0;
-  --danger: 205 45 60;
-  --partner: 54 125 209;
+  --danger: 200 40 46;
+  --partner: 105 84 200;
   --on-fill: 255 255 255;
   --glass: 255 255 255;
-  --aura-a: 22 141 206;
-  --aura-b: 113 101 217;
-  --aura-a-alpha: 0.17;
-  --aura-b-alpha: 0.15;
-  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 1px 2px rgb(30 60 110 / 0.08), 0 10px 24px -14px rgb(30 70 130 / 0.25);
-  --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 4px 10px -2px rgb(30 60 110 / 0.12), 0 18px 36px -16px rgb(30 70 130 / 0.32);
-  --shadow-glow: 0 0 0 1px rgb(22 141 206 / 0.28), 0 8px 24px -8px rgb(22 141 206 / 0.45);
-  --shadow-float: 0 24px 50px -20px rgb(30 70 130 / 0.38);
-  /* Light theme: softer, wider, more restrained glow. */
-  --glow-k: 0.5;
-  --wash-k: 0.75;
-  --glow-size: 44px;
+  --aura-a: 214 69 76;
+  --aura-b: 105 84 200;
+  --aura-a-alpha: 0;
+  --aura-b-alpha: 0;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.08);
+  --shadow-lift: 0 6px 18px -8px rgb(0 0 0 / 0.2);
+  --shadow-glow: none;
+  --shadow-float: 0 18px 40px -16px rgb(0 0 0 / 0.3);
+  --glow-k: 0;
+  --wash-k: 0;
+  --glow-size: 0px;
 }
 
 @layer base {
@@ -127,9 +135,7 @@
 @layer components {
   /* Selective glass: sidebar, top bar, floating panels and modals only. */
   .glass {
-    background: rgb(var(--glass) / 0.74);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-    backdrop-filter: blur(20px) saturate(140%);
+    background: rgb(var(--glass) / 0.97);
     @apply border border-line/10;
   }
   /* Main surface (20px). Solid for readability. */
@@ -182,7 +188,7 @@
     --aura-wash: 0; /* inner gradient alpha (x --wash-k) */
     position: relative;
     border: 1px solid rgb(var(--aura) / var(--aura-line));
-    border-radius: 14px;
+    border-radius: 12px;
     background:
       linear-gradient(135deg, rgb(var(--aura) / calc(var(--aura-wash) * var(--wash-k))) 0%, transparent 58%),
       rgb(var(--surface));
@@ -195,7 +201,7 @@
       background-color 0.18s ease;
   }
   .aurora-lg {
-    border-radius: 20px;
+    border-radius: 16px;
   }
   /* Hover (pointer devices only): lift and lean into the colour. */
   @media (hover: hover) {
@@ -237,7 +243,7 @@
 
   /* Deadline: strongest hierarchy; colour follows urgency. */
   .aurora-deadline {
-    border-radius: 20px;
+    border-radius: 16px;
   }
   .aurora-deadline::before {
     /* coloured edge illumination */
@@ -298,17 +304,9 @@
 
   /* Habit: atmospheric cyan + violet light from opposite corners. */
   .aurora-habit {
-    --aura: var(--accent);
+    --aura: var(--accent-2);
     --aura-line: 0.22;
-    --aura-glow: 0.16;
-    background:
-      radial-gradient(120% 90% at 100% 0%, rgb(var(--accent) / calc(0.14 * var(--wash-k))), transparent 60%),
-      radial-gradient(110% 90% at 0% 100%, rgb(var(--accent-2) / calc(0.14 * var(--wash-k))), transparent 62%),
-      rgb(var(--surface));
-    box-shadow:
-      var(--shadow-card),
-      0 0 var(--glow-size) -10px rgb(var(--accent) / calc(0.3 * var(--glow-k))),
-      0 0 var(--glow-size) -12px rgb(var(--accent-2) / calc(0.3 * var(--glow-k)));
+    background: rgb(var(--surface));
   }
   .aurora-habit[data-completed='true'] {
     background: rgb(var(--surface));
@@ -329,12 +327,7 @@
   .aurora-rana {
     --aura: var(--accent);
     --aura-line: 0.3;
-    --aura-glow: 0.28;
-    background:
-      linear-gradient(135deg, rgb(var(--accent) / calc(0.14 * var(--wash-k))), rgb(var(--accent-2) / calc(0.14 * var(--wash-k)))),
-      rgb(var(--glass) / 0.82);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    backdrop-filter: blur(18px) saturate(140%);
+    background: rgb(var(--surface));
   }
 
   /* Secondary information: neutral, quiet, no glow. */

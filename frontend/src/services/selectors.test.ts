@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { A, B, NOW, TODAY, day, daily, deadline, done, habit } from '../test/fixtures'
 import { dayState, streakOf } from './habits'
-import { comingUpTasks, habitProgress, habitsOf, isExpired, openDeadlinesOn, pastDeadlines, personDay, taskProgress, tasksOwnedBy, todayDeadlines } from './selectors'
+import { toKey } from './dates'
+import type { Task } from '../types'
+import { nextDeadlines, comingUpTasks, habitProgress, habitsOf, isExpired, openDeadlinesOn, pastDeadlines, personDay, taskProgress, tasksOwnedBy, todayDeadlines } from './selectors'
 import { urgencyOf } from './urgency'
 
 describe('deadline grouping', () => {
@@ -160,5 +162,48 @@ describe('viewing mode filters (Partner Mode)', () => {
     tasksOwnedBy(tasks, B)
     habitsOf(habits, B)
     expect(JSON.stringify(tasks) + JSON.stringify(habits)).toBe(before)
+  })
+})
+
+describe('nextDeadlines (Home: Upcoming Deadlines)', () => {
+  const now = new Date(2026, 10, 9, 13, 30) // 9 Nov 2026, 1:30 PM local
+  const mk = (id: string, due: Date, over: Partial<Task> = {}): Task => ({
+    id, kind: 'deadline', title: id, createdBy: 'u1', createdAt: '2026-11-01T00:00:00Z', notifySecondUser: false,
+    date: toKey(due), dueAt: due.toISOString(), status: 'open', ...over,
+  } as Task)
+  const at = (d: number, h: number, m = 0) => new Date(2026, 10, d, h, m)
+
+  it('orders today and tomorrow together by actual deadline and caps at three', () => {
+    const tasks = [mk('tom-9am', at(10, 9)), mk('today-11pm', at(9, 23)), mk('today-5pm', at(9, 17)), mk('tom-8pm', at(10, 20))]
+    expect(nextDeadlines(tasks, now).map((t) => t.id)).toEqual(['today-5pm', 'today-11pm', 'tom-9am'])
+  })
+  it('shows fewer when fewer exist and nothing when none do', () => {
+    expect(nextDeadlines([mk('a', at(9, 18))], now)).toHaveLength(1)
+    expect(nextDeadlines([], now)).toEqual([])
+  })
+  it('excludes completed, expired, later-than-tomorrow and daily tasks; never duplicates', () => {
+    const tasks = [
+      mk('done', at(9, 18), { status: 'completed', completedAt: at(9, 12).toISOString() }),
+      mk('expired', at(9, 9)),
+      mk('later', at(11, 10)),
+      { ...mk('daily', at(9, 18)), kind: 'daily' } as Task,
+      mk('ok', at(9, 19)),
+    ]
+    const r = nextDeadlines(tasks, now)
+    expect(r.map((t) => t.id)).toEqual(['ok'])
+    expect(new Set(r.map((t) => t.id)).size).toBe(r.length)
+  })
+  it('re-orders immediately when a deadline is edited or a task completes/deletes', () => {
+    let tasks = [mk('a', at(9, 15)), mk('b', at(9, 16)), mk('c', at(10, 8)), mk('d', at(10, 9))]
+    expect(nextDeadlines(tasks, now).map((t) => t.id)).toEqual(['a', 'b', 'c'])
+    tasks = tasks.map((t) => (t.id === 'd' ? mk('d', at(9, 14)) : t)) // edit d to 2 PM today
+    expect(nextDeadlines(tasks, now).map((t) => t.id)).toEqual(['d', 'a', 'b'])
+    tasks = tasks.map((t) => (t.id === 'd' ? { ...t, status: 'completed' as const } : t))
+    expect(nextDeadlines(tasks, now).map((t) => t.id)).toEqual(['a', 'b', 'c'])
+    expect(nextDeadlines(tasks.filter((t) => t.id !== 'a'), now).map((t) => t.id)).toEqual(['b', 'c'])
+  })
+  it('uses local calendar days: a 12:10 AM tomorrow deadline is tomorrow, not today', () => {
+    const lateNow = new Date(2026, 10, 9, 23, 50)
+    expect(nextDeadlines([mk('x', at(10, 0, 10)), mk('y', at(11, 0, 10))], lateNow).map((t) => t.id)).toEqual(['x'])
   })
 })

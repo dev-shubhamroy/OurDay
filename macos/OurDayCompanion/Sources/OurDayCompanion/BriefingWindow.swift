@@ -52,14 +52,16 @@ final class BriefingWindowController: NSObject, NSWindowDelegate {
         if lastShownUnlockID == unlockID { Log.info("briefing already shown for \(unlockID.uuidString.prefix(8)); skipped"); return false }
         lastShownUnlockID = unlockID
         if window == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 760),
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 880),
                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                              backing: .buffered, defer: false)
             w.title = "RANA Briefing"
             w.titlebarAppearsTransparent = true
+            w.appearance = NSAppearance(named: .darkAqua)
+            w.backgroundColor = NSColor(srgbRed: 17 / 255, green: 17 / 255, blue: 19 / 255, alpha: 1)
             w.titleVisibility = .hidden
             w.isMovableByWindowBackground = true
-            w.minSize = NSSize(width: 520, height: 520)
+            w.minSize = NSSize(width: 760, height: 560)
             w.isReleasedWhenClosed = false
             w.delegate = self
             w.contentView = NSHostingView(rootView: BriefingRoot(model: model,

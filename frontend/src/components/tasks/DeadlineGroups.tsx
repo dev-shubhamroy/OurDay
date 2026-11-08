@@ -1,40 +1,31 @@
-import { CalendarClock, Flag, PartyPopper } from 'lucide-react'
+import { Flag, PartyPopper } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useApp } from '../../hooks/useApp'
 import { useViewData } from '../../hooks/useView'
-import { addDays } from '../../services/dates'
-import { openDeadlinesOn } from '../../services/selectors'
-import type { Task } from '../../types'
+import { nextDeadlines } from '../../services/selectors'
 import { SectionHeader } from '../ui/SectionHeader'
 import { DeadlineCard } from './DeadlineCard'
 
-function Group({ title, tasks, empty, tomorrow }: { title: string; tasks: Task[]; empty: string; tomorrow?: boolean }) {
+/** One list: the next three incomplete deadlines across today and tomorrow, earliest first. */
+export function DeadlineGroups() {
+  const { now, today } = useApp()
+  const { tasks } = useViewData()
+  const next = nextDeadlines(tasks, now, 3)
   return (
-    <section aria-label={title} className="panel animate-rise p-4 sm:p-5">
-      <SectionHeader icon={tomorrow ? <CalendarClock className="h-4 w-4" /> : <Flag className="h-4 w-4" />} title={title} meta={tasks.length > 0 ? `${tasks.length} open` : undefined} />
-      {tasks.length === 0 ? (
+    <section aria-label="Upcoming Deadlines" className="animate-rise">
+      <SectionHeader icon={<Flag className="h-4 w-4" />} title="Upcoming Deadlines" meta={<Link to="/deadlines" className="inline-flex min-h-11 items-center text-accent hover:underline">See all</Link>} />
+      {next.length === 0 ? (
         <div className="flex items-center gap-3 rounded-tile border border-dashed border-line/20 px-4 py-5 text-sm text-muted">
           <PartyPopper className="h-5 w-5 shrink-0 text-accent/70" aria-hidden="true" />
-          {empty}
+          Nothing coming up. Enjoy the breathing room.
         </div>
       ) : (
         <div className="space-y-3">
-          {tasks.map((t) => (
-            <DeadlineCard key={t.id} task={t} subdued={tomorrow} />
+          {next.map((t) => (
+            <DeadlineCard key={t.id} task={t} dayLabel={t.date === today ? 'Today' : 'Tomorrow'} />
           ))}
         </div>
       )}
     </section>
-  )
-}
-
-/** Every incomplete deadline due today and tomorrow, each in its own card, earliest first. */
-export function DeadlineGroups() {
-  const { now, today } = useApp()
-  const { tasks } = useViewData()
-  return (
-    <div className="space-y-6">
-      <Group title="Today’s Deadlines" tasks={openDeadlinesOn(tasks, now, today)} empty="No deadlines today. Enjoy the breathing room." />
-      <Group title="Tomorrow’s Deadlines" tasks={openDeadlinesOn(tasks, now, addDays(today, 1))} empty="Nothing due tomorrow yet." tomorrow />
-    </div>
   )
 }

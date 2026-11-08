@@ -6,6 +6,7 @@ import { AuroraCard } from '../components/ui/AuroraCard'
 import { AuthSplash } from '../components/layout/AuthGuards'
 import { AppProvider } from './AppProvider'
 import { NotificationProvider } from './NotificationProvider'
+import { QuoteProvider } from './QuoteProvider'
 import { RemoteAppProvider } from './RemoteAppProvider'
 import { ViewProvider } from './ViewProvider'
 
@@ -42,16 +43,20 @@ export function AppData() {
   if (status === 'disabled') {
     return (
       <AppProvider>
-        <ViewProvider>
-          <Outlet />
-        </ViewProvider>
+        <QuoteProvider>
+          <ViewProvider>
+            <Outlet />
+          </ViewProvider>
+        </QuoteProvider>
       </AppProvider>
     )
   }
   return (
     <RemoteAppProvider>
       <NotificationProvider>
-        <LoadGate />
+        <QuoteProvider>
+          <LoadGate />
+        </QuoteProvider>
       </NotificationProvider>
     </RemoteAppProvider>
   )

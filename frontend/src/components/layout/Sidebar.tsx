@@ -35,7 +35,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             className={({ isActive }) =>
               cn(
                 'group relative flex h-11 items-center gap-3 rounded-ctl px-3 text-sm font-medium transition duration-200',
-                isActive ? 'bg-gradient-to-r from-accent/15 to-accent/5 text-accent' : 'text-muted hover:bg-line/10 hover:text-fg',
+                isActive ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-line/10 hover:text-fg',
               )
             }
           >

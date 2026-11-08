@@ -10,7 +10,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-gradient-to-b from-accent to-accent/85 text-accent-fg shadow-glow hover:brightness-110 active:brightness-95',
+  primary: 'bg-button text-accent-fg hover:brightness-110 active:brightness-95',
   soft: 'border border-accent/25 bg-accent/10 text-accent hover:bg-accent/15',
   ghost: 'border border-line/10 text-muted hover:bg-line/10 hover:text-fg',
 }

@@ -18,9 +18,9 @@ export default function Setup() {
   const [error, setError] = useState<string | null>(null)
   const [code, setCode] = useState('')
 
-  if (auth === 'disabled') return <Navigate to="/home" replace />
+  if (auth === 'disabled') return <Navigate to="/today" replace />
   if (ws.status === 'idle' || ws.status === 'loading') return <AuthSplash />
-  if (ws.status === 'ready') return <Navigate to="/home" replace />
+  if (ws.status === 'ready') return <Navigate to="/today" replace />
 
   const create = async () => {
     setError(null)
@@ -28,7 +28,7 @@ export default function Setup() {
     const r = await ws.createWorkspace()
     setBusy(null)
     if (r.error) return setError(r.error)
-    navigate('/home', { replace: true })
+    navigate('/today', { replace: true })
   }
 
   const join = async (e: FormEvent) => {
@@ -40,7 +40,7 @@ export default function Setup() {
     const r = await ws.acceptInvitation(c)
     setBusy(null)
     if (r.error) return setError(r.error)
-    navigate('/home', { replace: true })
+    navigate('/today', { replace: true })
   }
 
   return (

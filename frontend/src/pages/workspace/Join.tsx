@@ -19,13 +19,13 @@ export default function Join() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (auth === 'disabled') return <Navigate to="/home" replace />
+  if (auth === 'disabled') return <Navigate to="/today" replace />
   if (ws.status === 'idle' || ws.status === 'loading') return <AuthSplash />
 
   if (ws.status === 'ready') {
     return (
       <AuthLayout title="You’re already connected" subtitle="No invitation needed — you’re part of a workspace.">
-        <Link to="/home">
+        <Link to="/today">
           <Button size="lg" className="w-full">
             Open OurDay
           </Button>
@@ -55,7 +55,7 @@ export default function Join() {
     const r = await ws.acceptInvitation(code)
     setBusy(false)
     if (r.error) return setError(r.error)
-    navigate('/home', { replace: true })
+    navigate('/today', { replace: true })
   }
 
   return (

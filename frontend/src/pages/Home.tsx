@@ -59,7 +59,7 @@ export default function Home() {
               </p>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-line/15">
-              <div className="h-full rounded-full bg-gradient-to-r from-accent via-accent to-accent2 transition-all duration-700" style={{ width: `${total ? (together / total) * 100 : 0}%` }} />
+              <div className="h-full rounded-full bg-accent transition-all duration-700" style={{ width: `${total ? (together / total) * 100 : 0}%` }} />
             </div>
             <PersonProgress />
           </section>

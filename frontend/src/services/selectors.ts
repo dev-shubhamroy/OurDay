@@ -19,6 +19,16 @@ export function openDeadlinesOn(tasks: Task[], now: Date, dayKey: DateKey): Task
   return tasks.filter((t) => t.kind === 'deadline' && t.date === dayKey && t.status === 'open' && !isExpired(t, now)).sort(byDue)
 }
 
+/** The next `limit` incomplete, still-active deadlines due today or tomorrow (local days), earliest actual deadline first. */
+export function nextDeadlines(tasks: Task[], now: Date, limit = 3): Task[] {
+  const today = toKey(now)
+  const tomorrow = addDays(today, 1)
+  return tasks
+    .filter((t) => t.kind === 'deadline' && (t.date === today || t.date === tomorrow) && t.status === 'open' && !isExpired(t, now))
+    .sort(byDue)
+    .slice(0, limit)
+}
+
 export function todayDaily(tasks: Task[], now: Date): Task[] {
   const today = toKey(now)
   return tasks.filter((t) => t.kind === 'daily' && t.date === today).sort(byPlan)

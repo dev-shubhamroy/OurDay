@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let prefs = Preferences.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        BrandFonts.register()
         Log.info("launched (debug=\(debug)) log=\(Log.path)")
         briefing.openDashboard = { [weak self] in self?.dashboard.show() }
 
