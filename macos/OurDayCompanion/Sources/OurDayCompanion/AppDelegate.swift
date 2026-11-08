@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private lazy var model = CompanionModel()
     private lazy var briefing = BriefingWindowController(model: model)
     private let dashboard = DashboardWindowController()
+    private lazy var centre = NotificationCentreController(model: model)
     private var statusItem: NSStatusItem!
     private let prefs = Preferences.shared
 
@@ -22,7 +23,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if debug { installDebugHooks() }
         monitor.onUnlock = { [weak self] id in self?.handleUnlock(id) }
         monitor.start()
-        Task { await model.restore() }
+        centre.openDashboard = { [weak self] path in self?.dashboard.show(path: path) }
+        model.onUnreadChange = { [weak self] n in
+            self?.statusItem.button?.title = n > 0 ? " \(n)" : ""
+            Log.info("unread badge = \(n)")
+        }
+        model.scheduler.setup()
+        model.scheduler.onHabitAnswer = { [weak self] h, d, yes in await self?.model.answerHabit(habitID: h, day: d, done: yes) }
+        model.scheduler.onOpen = { [weak self] in self?.centre.show() }
+        Task { await model.restore(); await model.backgroundSync(reason: "launch") }
+        startSyncTriggers()
+    }
+
+    /// Everything that should make the notification plan re-evaluate. Local notifications already scheduled keep
+    /// firing without any of this; these only pick up changes made elsewhere and time/zone changes.
+    private func startSyncTriggers() {
+        Timer.scheduledTimer(withTimeInterval: 120, repeats: true) { [weak self] _ in Task { @MainActor in await self?.model.backgroundSync(reason: "timer") } }
+        let ws = NSWorkspace.shared.notificationCenter
+        ws.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in try? await Task.sleep(nanoseconds: 4_000_000_000); await self?.model.backgroundSync(reason: "wake") }   // let Wi-Fi come back
+        }
+        let nc = NotificationCenter.default
+        nc.addObserver(forName: .NSSystemTimeZoneDidChange, object: nil, queue: .main) { [weak self] _ in Task { @MainActor in await self?.model.backgroundSync(reason: "timezone change") } }
+        nc.addObserver(forName: .NSCalendarDayChanged, object: nil, queue: .main) { [weak self] _ in Task { @MainActor in await self?.model.backgroundSync(reason: "new day") } }
     }
 
     nonisolated func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
@@ -65,6 +88,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             Task { await self?.model.signIn(email: e, password: p) }
         }
         on("corruptToken") { [weak self] _ in Task { await self?.model.debugCorruptToken(); Log.info("debug: access token corrupted (expiry unchanged)") } }
+        on("pending") { [weak self] _ in Task { await self?.model.scheduler.debugList() } }
+        on("delivered") { [weak self] _ in Task { await self?.model.scheduler.debugDelivered() } }
+        on("testNotification") { [weak self] n in Task { await self?.model.scheduler.debugTest(in: Double(n.userInfo?["seconds"] as? String ?? "10") ?? 10) } }
+        on("sync") { [weak self] _ in Task { await self?.model.backgroundSync(reason: "debug") } }
         on("load") { [weak self] n in let fresh = (n.userInfo?["session"] as? String) != "refresh"; Task { await self?.model.loadBriefing(newSession: fresh) } }
         on("setAppearance") { n in
             switch n.userInfo?["mode"] as? String { case "light": NSApp.appearance = NSAppearance(named: .aqua); case "dark": NSApp.appearance = NSAppearance(named: .darkAqua); default: NSApp.appearance = nil }
@@ -92,7 +119,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(item("Sign In…", #selector(openBriefing)))
         }
         menu.addItem(.separator())
-        let auto = item("Show briefing when Mac unlocks", #selector(toggleAuto)); auto.state = prefs.autoShowOnUnlock ? .on : .off
+        let p = model.scheduler.prefs
+        let unread = CentreRules.unread(model.centre)
+        menu.addItem(item(unread > 0 ? "Notification Centre (\(unread) unread)…" : "Notification Centre…", #selector(openCentre)))
+        let nm = item("Notifications", #selector(toggleNotifMaster)); nm.state = p.master ? .on : .off; menu.addItem(nm)
+        let nd = item("   Deadline reminders", #selector(toggleNotifDeadlines)); nd.state = p.deadlines ? .on : .off; nd.isEnabled = p.master; menu.addItem(nd)
+        let nh = item("   Habit check-ins (9:30 PM)", #selector(toggleNotifHabits)); nh.state = p.habits ? .on : .off; nh.isEnabled = p.master; menu.addItem(nh)
+        let np = item("   Partner activity", #selector(toggleNotifPartner)); np.state = p.partner ? .on : .off; np.isEnabled = p.master; menu.addItem(np)
+        if model.scheduler.authorization == .denied { menu.addItem(item("⚠︎ Notifications are blocked — open System Settings…", #selector(openNotifSettings))) }
+        menu.addItem(.separator())
+        let auto = item("Show briefing when Mac unlocks", #selector(toggleAuto)); auto.state = p.unlockBriefing ? .on : .off
         menu.addItem(auto)
         let login = item("Launch at login", #selector(toggleLogin)); login.state = LoginItem.isEnabled ? .on : .off
         menu.addItem(login)
@@ -106,7 +142,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func openBriefing() { showBriefing(unlockID: UUID()) }
     @objc private func openDashboard() { dashboard.show() }
     @objc private func signOut() { Task { await model.signOut() } }
-    @objc private func toggleAuto() { prefs.autoShowOnUnlock.toggle(); Log.info("auto-show on unlock = \(prefs.autoShowOnUnlock)") }
+    private func changePrefs(_ f: @escaping (inout NotificationPrefs) -> Void) { Task { await model.changePrefs(f) } }
+    @objc private func openCentre() { centre.show() }
+    @objc private func toggleNotifMaster() { changePrefs { $0.master.toggle() } }
+    @objc private func toggleNotifDeadlines() { changePrefs { $0.deadlines.toggle() } }
+    @objc private func toggleNotifHabits() { changePrefs { $0.habits.toggle() } }
+    @objc private func toggleNotifPartner() { changePrefs { $0.partner.toggle() } }
+    @objc private func openNotifSettings() { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!) }
+    @objc private func toggleAuto() { changePrefs { $0.unlockBriefing.toggle() } }
     @objc private func toggleLogin() { LoginItem.set(!LoginItem.isEnabled) }
     @objc private func simulate() { monitor.simulateUnlockCycle() }
     @objc private func quit() { NSApp.terminate(nil) }

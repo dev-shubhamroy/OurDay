@@ -32,6 +32,7 @@ enum AppError: Error, Equatable {
     case offline                 // no network / timeout / DNS
     case server(Int)             // 5xx / 429 / unexpected status
     case noWorkspace
+    case backendUnavailable      // notification tables/functions not deployed yet
     case notConfigured
     case decoding
 
@@ -42,6 +43,7 @@ enum AppError: Error, Equatable {
         case .unauthorized: return "Your session isn’t valid. Please sign in again."
         case .offline: return "You appear to be offline."
         case .server(let c): return "OurDay’s server had a problem (\(c)). Try again shortly."
+        case .backendUnavailable: return "The notification centre isn’t set up on the server yet."
         case .noWorkspace: return "You haven’t created or joined a workspace yet. Open the dashboard to set one up."
         case .notConfigured: return "This build has no Supabase configuration."
         case .decoding: return "OurDay returned data this version can’t read."

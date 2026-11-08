@@ -192,6 +192,32 @@ Decision: keep the undocumented notifications as the primary signal and add a 2 
 | Dashboard sign-in inside the web view | not tested |
 Known limit: an unlock suppressed by the toggle does not count as the day's first briefing, so the first unlock after re-enabling is still "full".
 
+## 11c. Notification system (web + database + Mac companion)
+
+**Rules (unchanged product rules):** the *Notify second user* flag controls notifications only, never access. A deadline's reminders go to its creator, and also to the other member when the flag is on. Completed, deleted and expired deadlines never remind. Each person's habit completion is independent. RANA stays deterministic.
+
+**Three layers, one shared record**
+1. **Native OS scheduling (Mac)** — `UNUserNotificationCenter` requests with `UNCalendarNotificationTrigger`. Handed to macOS, so they fire **with the companion closed**, as long as they were scheduled before it quit. Deadline reminders are pinned to an absolute instant (timezone changes cannot shift them); the 9:30 PM check-in uses wall-clock time so it follows the device timezone. Identifiers are stable (`ourday.dl.<task>.<due>.<seconds>`, `ourday.hb.<habit>.<day>`) and each request carries a signature of its visible content, so re-planning adds only what is missing, replaces what changed, removes what is gone and never duplicates. Soonest 60 are kept (below the documented 64 limit); the plan is rebuilt as time passes. Delivered reminders of completed/deleted/changed deadlines are removed from Notification Centre.
+2. **Database (Supabase, free)** — migration `20261109100000_notifications.sql` (additive): `notification_preferences` (master, deadlines, habits, partner, unlock_briefing, timezone) and `notifications` (history, `read_at`, task/habit reference, unique `(user_id, dedupe_key)`). Rows are created only by SECURITY DEFINER code: `generate_notifications_for` (the ten deadline intervals, created when each comes due within the last 30 min; the 9:30 PM check-in in the person's timezone), run **every minute by pg_cron when the extension is available** and callable by a signed-in person for themselves only (`generate_my_notifications`; the Mac calls it every 2 min, the web while open); and triggers that create **partner activity** rows (partner completes my task; an item shared with Notify second user is completed/shared/checked in; shared habit check-ins), honouring the recipient's preferences and never crossing workspaces. Clients can read their own rows and change only `read_at`.
+3. **Clients** — web: bell with unread badge, dropdown, `/notifications` page (history, mark read, mark all read, links to the related screen) and a Settings section with all preference switches. Mac: menu-bar badge, Notification Centre window, menu toggles, native alerts for fresh partner rows. Preferences and read state sync through Supabase (a local edit is queued and wins until pushed).
+
+**Habit check-in (9:30 PM local):** one notification per scheduled, unpaused, started, not-yet-logged habit the person takes part in (never the partner's personal habits). Buttons **Yes, done** / **No** upsert only the signed-in person's own `habit_logs` row on `(habit, user, day)` (no duplicates; a "No" never downgrades a completed habit; answers after midnight are ignored). **No response by midnight = missed**: this is *derived* (a past scheduled day without a `done` log is missed, the same rule that drives streaks), so no row is written and no duplicate is possible.
+
+**What is guaranteed, and what is not**
+| Case | Result |
+|---|---|
+| Companion closed, Mac awake or asleep, reminders already scheduled | Delivered by macOS (asleep: on wake, possibly late; a late 5-minute reminder can arrive after the deadline) |
+| Deadline created/edited/completed/deleted on another device | Mac learns within ~2 min **if the companion is running and online**, else at next launch/wake/unlock. Until then the Mac may notify about stale data |
+| Mac powered off, or no companion ever run | No OS alert. History rows are still created by the database and appear in the web app and the Mac centre later |
+| Partner activity | Recorded by the database immediately; **OS alert on the Mac only when the companion is running and online** (alerts older than 30 min are centre-only) |
+| Notification permission denied / Focus on | Nothing is scheduled/shown by macOS; the menu shows the blocked state; history still accrues |
+| Session expired | Already-scheduled reminders still fire; syncing resumes after signing in again |
+| Server push to a closed Mac | **Not built.** Needs APNs (paid Apple Developer account) or browser Web Push; out of scope on free infrastructure |
+
+**Preferences:** master, deadline reminders, habit check-ins, partner activity (all synced), plus *RANA briefing on unlock* (synced; Mac only; independent of notifications).
+
+**Deployment requirements:** apply the migration (`supabase db push --remote`); pg_cron is attempted inside the migration and is optional; web needs no new env vars; the Mac app is built with `scripts/build-app.sh` and needs notification permission and Keychain access on first run. A stable code-signing identity would stop the repeated Keychain prompts after each rebuild.
+
 ## 12. Status
 ### Implemented frontend functionality
 - Dark / light / system theme with tokens; responsive shell (sidebar on desktop, drawer on mobile); translucent sidebar with live badges and a two-user "in sync" card.

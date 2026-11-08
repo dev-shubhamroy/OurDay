@@ -11,12 +11,12 @@ struct TaskRow: Codable, Equatable {
 struct HabitRow: Codable, Equatable {
     var id: String; var title: String; var created_by: String
     var is_shared: Bool; var owner_id: String?; var schedule_days: [Int]?
-    var paused: Bool; var start_date: String
+    var paused: Bool; var start_date: String; var notify_second_user: Bool?
 }
 struct HabitLogRow: Codable, Equatable {
     var habit_id: String; var user_id: String; var day: String; var status: String; var done_at: String?
 }
-struct MemberRow: Codable, Equatable { var user_id: String; var role: String; var joined_at: String }
+struct MemberRow: Codable, Equatable { var user_id: String; var role: String; var joined_at: String; var workspace_id: String? }
 struct ProfileRow: Codable, Equatable { var id: String; var name: String }
 
 // MARK: Domain
@@ -32,6 +32,8 @@ struct WTask: Equatable {
     var due: Date?             // deadline instant
     var status: TaskStatus
     var completedAt: Date?; var completedBy: String?
+    /// "Notify second user": the creator's partner also gets notifications for this item. Never affects access.
+    var notifyOther: Bool = false
 }
 
 enum LogStatus { case done, missed }
@@ -43,6 +45,7 @@ struct WHabit: Equatable {
     var days: [Int]?           // nil = every day; 0 = Sunday … 6 = Saturday
     var paused: Bool; var startDate: String
     var log: [String: [String: LogEntry]]   // user → day → entry
+    var notifyOther: Bool = false
     var isShared: Bool { participants.count > 1 }
 }
 
@@ -51,6 +54,7 @@ struct Member: Equatable { var id: String; var name: String; var role: String }
 /// Everything the signed-in member can see (RLS scopes it to their workspace).
 struct DataSnapshot: Equatable {
     var meID: String
+    var workspaceID: String? = nil
     var members: [Member]
     var tasks: [WTask]
     var habits: [WHabit]
@@ -84,7 +88,7 @@ enum Mapper {
         let date = (kind == .deadline && due != nil) ? DayKey.key(due!, cal) : r.task_date
         return WTask(id: r.id, kind: kind, title: r.title, createdBy: r.created_by, date: date,
                      time: r.planned_time.map { String($0.prefix(5)) }, due: due, status: status,
-                     completedAt: Parse.iso(r.completed_at), completedBy: r.completed_by)
+                     completedAt: Parse.iso(r.completed_at), completedBy: r.completed_by, notifyOther: r.notify_second_user)
     }
 
     static func habits(_ rows: [HabitRow], logs: [HabitLogRow], memberIDs: [String]) -> [WHabit] {
@@ -96,7 +100,7 @@ enum Mapper {
         return rows.map { r in
             let days = (r.schedule_days?.isEmpty == false && r.schedule_days!.count < 7) ? r.schedule_days!.sorted() : nil
             return WHabit(id: r.id, title: r.title, participants: r.is_shared ? memberIDs : (r.owner_id.map { [$0] } ?? []),
-                          days: days, paused: r.paused, startDate: r.start_date, log: byHabit[r.id] ?? [:])
+                          days: days, paused: r.paused, startDate: r.start_date, log: byHabit[r.id] ?? [:], notifyOther: r.notify_second_user ?? false)
         }
     }
 

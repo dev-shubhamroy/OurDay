@@ -13,6 +13,7 @@ import { FloatingRana } from '../rana/FloatingRana'
 import { Sidebar } from './Sidebar'
 import { ViewBanner } from './ViewBanner'
 import { ViewModeToggle } from './ViewModeToggle'
+import { NotificationBell } from '../notifications/NotificationBell'
 import { useView } from '../../hooks/useView'
 
 export function AppShell() {
@@ -78,6 +79,7 @@ export function AppShell() {
               </span>
             )}
             <ViewModeToggle />
+            <NotificationBell />
             <Button onClick={() => setAddOpen(true)} icon={<Plus className="h-[18px] w-[18px]" />} className="px-3.5 sm:px-5">
               <span className="hidden sm:inline">Add Task</span>
               <span className="sm:hidden">Add</span>

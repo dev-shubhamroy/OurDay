@@ -10,7 +10,7 @@ final class DashboardWindowController: NSObject, NSWindowDelegate {
 
     var isVisible: Bool { window?.isVisible == true }
 
-    func show() {
+    func show(path: String = "") {
         if window == nil {
             let cfg = WKWebViewConfiguration()
             cfg.websiteDataStore = .default()       // persistent: stays signed in across launches
@@ -28,8 +28,9 @@ final class DashboardWindowController: NSObject, NSWindowDelegate {
             w.delegate = self
             window = w; web = wv
         }
+        if !path.isEmpty, let u = URL(string: path, relativeTo: Self.url) { web?.load(URLRequest(url: u.absoluteURL)) }
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        Log.info("dashboard window shown")
+        Log.info("dashboard window shown\(path.isEmpty ? "" : " at \(path)")")
     }
 }

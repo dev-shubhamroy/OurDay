@@ -11,6 +11,7 @@ import Completed from './pages/Completed'
 import Deadlines from './pages/Deadlines'
 import Habits from './pages/Habits'
 import Home from './pages/Home'
+import Notifications from './pages/Notifications'
 import Past from './pages/Past'
 import Join from './pages/workspace/Join'
 import Setup from './pages/workspace/Setup'
@@ -57,6 +58,7 @@ export default function App() {
                       <Route path="/upcoming" element={<Upcoming />} />
                       <Route path="/deadlines" element={<Deadlines />} />
                       <Route path="/habits" element={<Habits />} />
+                      <Route path="/notifications" element={<Notifications />} />
                       <Route path="/completed" element={<Completed />} />
                       <Route path="/past" element={<Past />} />
                       <Route path="/settings" element={<Settings />} />

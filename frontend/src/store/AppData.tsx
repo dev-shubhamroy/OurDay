@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button'
 import { AuroraCard } from '../components/ui/AuroraCard'
 import { AuthSplash } from '../components/layout/AuthGuards'
 import { AppProvider } from './AppProvider'
+import { NotificationProvider } from './NotificationProvider'
 import { RemoteAppProvider } from './RemoteAppProvider'
 import { ViewProvider } from './ViewProvider'
 
@@ -49,7 +50,9 @@ export function AppData() {
   }
   return (
     <RemoteAppProvider>
-      <LoadGate />
+      <NotificationProvider>
+        <LoadGate />
+      </NotificationProvider>
     </RemoteAppProvider>
   )
 }

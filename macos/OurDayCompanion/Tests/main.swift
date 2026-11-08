@@ -59,7 +59,7 @@ do { // briefing day
 }
 
 let done = DispatchSemaphore(value: 0)
-Task.detached { await runAuthTests(); await runDataTests(); runEngineTests(); done.signal() }
+Task.detached { await runAuthTests(); await runDataTests(); runEngineTests(); runNotificationTests(); await runCentreTests(); done.signal() }
 done.wait()
 print("\(checks - failures)/\(checks) checks passed")
 exit(failures == 0 ? 0 : 1)

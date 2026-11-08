@@ -32,7 +32,15 @@ for (const f of readdirSync(join(root, 'migrations')).sort()) {
 
 let failed = 0
 for (const f of readdirSync(join(root, 'tests')).filter((x) => x.endsWith('.sql')).sort()) {
-  const res = await db.exec(readFileSync(join(root, 'tests', f), 'utf8'))
+  let res
+  try {
+    res = await db.exec(readFileSync(join(root, 'tests', f), 'utf8'))
+  } catch (e) {
+    console.log(`\n== ${f}: SQL ERROR: ${e.message}${e.where ? '\n   ' + e.where : ''}`)
+    await db.exec('rollback').catch(() => {})
+    failed += 1
+    continue
+  }
   const rows = res.find((r) => r.fields?.some((x) => x.name === 'result'))?.rows ?? []
   const sum = res.find((r) => r.fields?.some((x) => x.name === 'failed'))?.rows?.[0]
   console.log(`\n== ${f}: ${sum.passed} passed, ${sum.failed} failed`)
