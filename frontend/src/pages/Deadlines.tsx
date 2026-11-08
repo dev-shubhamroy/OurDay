@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Archive, Flag, PartyPopper } from 'lucide-react'
+import { Archive, Flag } from 'lucide-react'
 import { DeadlineCard } from '../components/tasks/DeadlineCard'
 import { Chip, TaskRow } from '../components/tasks/TaskRow'
 import { UrgencyBadge } from '../components/tasks/UrgencyBadge'
@@ -40,7 +40,7 @@ export default function Deadlines() {
         <div className="space-y-8">
           <section className="animate-rise">
             <SectionHeader icon={<Flag className="h-4 w-4" />} title="Today" meta={`${todays.length}`} />
-            <div className="space-y-3">{todays.length === 0 ? <EmptyState icon={<PartyPopper className="h-6 w-6" />} title="No deadlines today" /> : todays.map((t) => <DeadlineCard key={t.id} task={t} />)}</div>
+            <div className="space-y-3">{todays.length === 0 ? <EmptyState title="No deadlines today" /> : todays.map((t) => <DeadlineCard key={t.id} task={t} />)}</div>
           </section>
           <section className="animate-rise" style={{ animationDelay: '.08s' }}>
             <SectionHeader icon={<Flag className="h-4 w-4" />} title="Future deadlines" meta={`${future.length}`} />

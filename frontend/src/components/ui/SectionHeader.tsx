@@ -10,11 +10,11 @@ export function SectionHeader({ icon, title, meta }: { icon: ReactNode; title: s
   )
 }
 
-export function EmptyState({ icon, title, hint }: { icon: ReactNode; title: string; hint?: string }) {
+export function EmptyState({ icon, title, hint }: { icon?: ReactNode; title: string; hint?: string }) {
   return (
-    <div className="grid place-items-center rounded-2xl border border-dashed border-line/20 px-6 py-8 text-center">
-      <span className="mb-2 text-muted">{icon}</span>
-      <p className="font-medium">{title}</p>
+    <div className="grid place-items-center rounded-2xl border border-dashed border-line/20 px-6 py-6 text-center text-muted">
+      {icon && <span className="mb-2 text-muted">{icon}</span>}
+      <p className="text-sm font-medium">{title}</p>
       {hint && <p className="mt-0.5 text-sm text-muted">{hint}</p>}
     </div>
   )
