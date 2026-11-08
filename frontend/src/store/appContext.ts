@@ -42,6 +42,12 @@ export interface SyncInfo {
   loadError: string | null
   /** The most recent failed save, for a toast. `id` changes on every new failure. */
   actionError: { id: number; message: string } | null
+  /** Changes saved on this device that haven't reached the server yet. */
+  pending: number
+  /** True while queued changes are being sent. */
+  syncing: boolean
+  /** When the data on screen was last confirmed by the server (ISO), or null. */
+  lastSyncedAt: string | null
   retry: () => void
 }
 

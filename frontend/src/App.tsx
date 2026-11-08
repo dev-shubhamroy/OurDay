@@ -18,6 +18,7 @@ import Setup from './pages/workspace/Setup'
 import Settings from './pages/Settings'
 import Today from './pages/Today'
 import Upcoming from './pages/Upcoming'
+import { PwaBridge } from './pwa/PwaBridge'
 import { hasSeenBriefing } from './services/briefingSeen'
 import { AuthProvider } from './store/AuthProvider'
 import { WorkspaceProvider } from './store/WorkspaceProvider'
@@ -27,7 +28,9 @@ import { ThemeProvider } from './store/theme'
 function BriefingGate() {
   const { today } = useApp()
   const { pathname } = useLocation()
-  if (!hasSeenBriefing(today) && pathname !== '/briefing') return <Navigate to="/briefing" replace />
+  const { search } = useLocation()
+  // A tapped notification action goes straight to its screen; the briefing waits for the next normal open.
+  if (!hasSeenBriefing(today) && pathname !== '/briefing' && !search.includes('checkin=')) return <Navigate to="/briefing" replace />
   return <Outlet />
 }
 
@@ -37,6 +40,7 @@ export default function App() {
       <AuthProvider>
         <WorkspaceProvider>
           <BrowserRouter>
+            <PwaBridge />
             <Routes>
               <Route element={<PublicOnly />}>
                 <Route path="/login" element={<Login />} />

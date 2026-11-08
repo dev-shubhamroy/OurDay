@@ -104,7 +104,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateHabit = useCallback((id: string, patch: UpdateHabitInput) => dispatch({ type: 'updateHabit', id, patch }), [])
   const deleteHabit = useCallback((id: string) => dispatch({ type: 'deleteHabit', id }), [])
   const markHabitMissed = useCallback((id: string) => dispatch({ type: 'missHabit', id, user: ME, day: toKey(new Date()) }), [])
-  const sync = useMemo<SyncInfo>(() => ({ remote: false, state: 'idle', loading: false, loadError: null, actionError: null, retry: () => undefined }), [])
+  const sync = useMemo<SyncInfo>(() => ({ remote: false, state: 'idle', loading: false, loadError: null, actionError: null, pending: 0, syncing: false, lastSyncedAt: null, retry: () => undefined }), [])
 
   const value = useMemo(() => {
     const me = USERS.find((u) => u.id === ME)!

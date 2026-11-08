@@ -52,7 +52,7 @@ export function FloatingRana() {
   const showBubble = open || ack !== null
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-3 z-30 flex flex-col items-end gap-2 sm:bottom-6 sm:right-6">
+    <div className="pointer-events-none fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] right-3 z-30 flex flex-col items-end gap-2 sm:right-6 lg:bottom-6">
       {showBubble && (
         <AuroraCard variant="rana" large className="pointer-events-auto max-w-[260px] animate-rise !rounded-br-md p-4" role="status">
           <p className="eyebrow mb-1 text-accent">RANA</p>

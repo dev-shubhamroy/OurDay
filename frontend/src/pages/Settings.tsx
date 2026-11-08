@@ -37,7 +37,7 @@ export default function Settings() {
   return (
     <>
       <PageHeader eyebrow="Preferences" title="Settings" subtitle="Appearance, your account and your shared workspace." />
-      <div className="grid max-w-3xl gap-5">
+      <div className="grid max-w-3xl grid-cols-[minmax(0,1fr)] gap-5">
         <Group icon={<Sun className="h-4 w-4" />} title="Appearance">
           <Segmented
             label="Theme"

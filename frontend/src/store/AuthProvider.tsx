@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { isAuthConfigured, supabase } from '../lib/supabase'
 import { friendlyAuthError } from '../lib/authErrors'
+import { clearUserCache } from '../services/offline/cache'
 import { AuthContext, type AuthResult, type AuthStatus, type AuthUser } from './authContext'
 
 function toUser(session: Session | null): AuthUser | null {
@@ -46,11 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!supabase) return
+    if (user?.id) clearUserCache(user.id) // a signed-out phone keeps none of this person's data
     // Local scope: ends this browser's session without needing the network to succeed.
     await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined)
     setUser(null)
     setStatus('signedOut')
-  }, [])
+  }, [user])
 
   const signUp = useCallback(async (name: string, email: string, password: string): Promise<AuthResult> => {
     if (!supabase) return { error: 'Sign-in isn’t set up yet.' }

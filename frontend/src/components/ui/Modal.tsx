@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { IconButton } from './IconButton'
+import { useBackClose } from '../../hooks/useBackClose'
 
 /** Floating glass dialog on desktop, bottom sheet on mobile. */
 export function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
@@ -9,6 +10,7 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
   useEffect(() => {
     closeRef.current = onClose
   })
+  useBackClose(open, onClose)
 
   useEffect(() => {
     if (!open) return

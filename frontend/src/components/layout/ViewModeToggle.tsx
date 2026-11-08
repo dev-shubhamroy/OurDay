@@ -13,7 +13,7 @@ export function ViewModeToggle() {
     { value: 'partner', label: 'Partner Mode', short: partner.name.split(' ')[0], user: partner, disabled: !canViewPartner },
   ]
   return (
-    <div role="radiogroup" aria-label="Viewing mode" className="flex h-11 shrink-0 items-center gap-0.5 rounded-ctl border border-line/10 bg-line/10 p-0.5">
+    <div role="radiogroup" aria-label="Viewing mode" className="flex h-11 shrink-0 items-center overflow-hidden rounded-ctl border border-line/10 bg-line/10">
       {options.map((o) => {
         const active = mode === o.value
         return (
@@ -28,7 +28,7 @@ export function ViewModeToggle() {
             title={o.disabled ? 'Your partner hasn’t joined yet' : o.label}
             onClick={() => setMode(o.value)}
             className={cn(
-              'flex h-10 min-w-11 items-center justify-center gap-1.5 rounded-[10px] px-1.5 text-xs font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-40 sm:px-2.5',
+              'flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-[12px] px-2 text-xs font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-40 sm:px-2.5',
               active ? (o.value === 'me' ? 'border border-accent/40 bg-accent/15 text-accent shadow-card' : 'border border-accent2/40 bg-accent2/15 text-accent2 shadow-card') : 'border border-transparent text-muted hover:text-fg',
             )}
           >

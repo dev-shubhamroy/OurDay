@@ -1,6 +1,7 @@
 import { Monitor } from 'lucide-react'
 import { useNotifications } from '../../hooks/useNotifications'
 import { Switch } from '../ui/Controls'
+import { PushSettings } from './PushSettings'
 import type { NotificationPrefs } from '../../services/remote/notifications'
 
 const ROWS: { key: keyof Omit<NotificationPrefs, 'timezone'>; label: string; hint: string; needsMaster: boolean }[] = [
@@ -33,6 +34,7 @@ export function NotificationSettings() {
           )
         })}
       </ul>
+      <PushSettings />
       <p className="mt-3 text-xs text-muted">Time zone used for check-ins: {n.prefs.timezone}</p>
       {n.error && <p role="alert" className="mt-2 text-xs text-danger">{n.error}</p>}
     </div>

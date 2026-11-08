@@ -35,7 +35,7 @@ export default function Home() {
           <DeadlineGroups />
 
           <section className="animate-rise" style={{ animationDelay: '.12s' }}>
-            <SectionHeader icon={<ArrowRight className="h-4 w-4" />} title="Coming up" meta={<Link to="/upcoming" className="hit-44 text-accent hover:underline">See all</Link>} />
+            <SectionHeader icon={<ArrowRight className="h-4 w-4" />} title="Coming up" meta={<Link to="/upcoming" className="inline-flex min-h-11 items-center text-accent hover:underline">See all</Link>} />
             <div className="space-y-2.5">
               {ahead.length === 0 ? (
                 <EmptyState icon={<ArrowRight className="h-6 w-6" />} title="Nothing scheduled ahead" />

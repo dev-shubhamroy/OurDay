@@ -6,7 +6,10 @@ import { friendlyWorkspaceError, isNetworkError } from '../lib/authErrors'
 import { createDebouncer, watchTables, type SyncState } from '../lib/realtime'
 import { supabase } from '../lib/supabase'
 import { toKey } from '../services/dates'
-import { fetchSnapshot, insertHabit, insertTask, patchHabit, patchTask, removeHabit, removeTask, setTaskCompleted, writeMyHabitLog, type Ctx } from '../services/remote/data'
+import { fetchSnapshot, type Ctx } from '../services/remote/data'
+import { loadDataCache, saveDataCache } from '../services/offline/cache'
+import { enqueue, loadQueue, opActions, saveQueue, type Op, type QueuedOp } from '../services/offline/queue'
+import { runOp } from '../services/offline/run'
 import { initialsOf, pendingPartner } from '../services/remote/mappers'
 import { reducer } from '../services/remote/state'
 import type { Habit, Task, User } from '../types'
@@ -31,6 +34,9 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
   const [sync, setSync] = useState<SyncState>('connecting')
   const [offline, setOffline] = useState(false)
   const [actionError, setActionError] = useState<{ id: number; message: string } | null>(null)
+  const [pending, setPending] = useState(0)
+  const [syncing, setSyncing] = useState(false)
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null)
 
   const uid = user?.id ?? ''
   const wsId = ws.workspace?.id ?? ''
@@ -60,6 +66,43 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
     memberIdsRef.current = memberIds
   }, [memberIds])
   const refetchRef = useRef<() => void>(() => undefined)
+  /** Changes waiting to reach the server (persisted, so they survive closing the app while offline). */
+  const queueRef = useRef<QueuedOp[]>([])
+  const flushing = useRef(false)
+  const flushRef = useRef<() => Promise<void>>(async () => undefined)
+  /** Re-applies queued changes on top of a server snapshot, so unsynced work never disappears from the screen. */
+  const withQueue = useCallback((snap: { tasks: Task[]; habits: Habit[] }) => {
+    let st = { tasks: snap.tasks, habits: snap.habits, pulse: 0 }
+    for (const q of queueRef.current) for (const a of opActions(q.op, { memberIds: memberIdsRef.current })) st = reducer(st, a)
+    return st
+  }, [])
+  const setQueue = useCallback(
+    (q: QueuedOp[]) => {
+      queueRef.current = q
+      if (uid) saveQueue(uid, q)
+      setPending(q.length)
+    },
+    [uid],
+  )
+
+  // Offline start: show the last known data immediately (with queued changes applied), then refresh.
+  const hydrated = useRef('')
+  useEffect(() => {
+    if (!uid || !wsId || hydrated.current === uid) return
+    hydrated.current = uid
+    queueRef.current = loadQueue(uid)
+    queueMicrotask(() => {
+      setPending(queueRef.current.length)
+      const c = loadDataCache(uid)
+      if (!c) return
+      serverSnapshot.current = { tasks: c.tasks, habits: c.habits }
+      hasLoaded.current = true
+      const st = withQueue(c)
+      dispatch({ type: 'replace', tasks: st.tasks, habits: st.habits })
+      setLastSyncedAt(c.at)
+      setLoading(false)
+    })
+  }, [uid, wsId, withQueue])
 
   const refetch = useCallback(async () => {
     if (!supabase || !wsId) return
@@ -75,7 +118,10 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
       }
       serverSnapshot.current = snap
       hasLoaded.current = true
-      dispatch({ type: 'replace', tasks: snap.tasks, habits: snap.habits })
+      if (uid) saveDataCache(uid, snap.tasks, snap.habits)
+      const shown = queueRef.current.length > 0 ? withQueue(snap) : snap
+      dispatch({ type: 'replace', tasks: shown.tasks, habits: shown.habits })
+      setLastSyncedAt(new Date().toISOString())
       setLoadError(null)
       setOffline(false)
     } catch (e) {
@@ -85,7 +131,7 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
     } finally {
       if (mine === fetchSeq.current) setLoading(false)
     }
-  }, [wsId])
+  }, [wsId, uid, withQueue])
 
   useEffect(() => {
     refetchRef.current = () => void refetch()
@@ -122,14 +168,21 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!wsId) return
     const onVisible = () => {
-      if (document.visibilityState === 'visible') void refetch()
+      if (document.visibilityState === 'visible') {
+        void flushRef.current()
+        void refetch()
+      }
     }
-    const onOnline = () => void refetch()
+    const onOnline = () => {
+      void flushRef.current()
+      void refetch()
+    }
     const onOffline = () => setOffline(true)
     window.addEventListener('online', onOnline)
     window.addEventListener('offline', onOffline)
     document.addEventListener('visibilitychange', onVisible)
     const poll = setInterval(() => {
+      if (queueRef.current.length > 0) void flushRef.current()
       if (sync !== 'live' || offline) void refetch()
     }, POLL_MS)
     return () => {
@@ -143,30 +196,83 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
   // ---- writes ------------------------------------------------------------------------------------
   const ctx = useMemo<Ctx | null>(() => (supabase && wsId && uid ? { client: supabase, workspaceId: wsId, userId: uid } : null), [wsId, uid])
   const errId = useRef(0)
+  const inflightQid = useRef<string | null>(null)
 
-  /** Optimistic apply -> server write -> on failure re-fetch (reverts) and report. */
-  const write = useCallback(
-    async (op: () => Promise<{ message: string } | null>) => {
-      inflightWrites.current++
+  const report = useCallback((err: { message: string }) => {
+    setActionError({
+      id: ++errId.current,
+      message: /immutable|not_a_participant|row-level|permission/i.test(err.message)
+        ? 'You don’t have permission to do that.'
+        : friendlyWorkspaceError(err) === 'Something went wrong. Please try again.'
+          ? 'That change couldn’t be saved. Please try again.'
+          : friendlyWorkspaceError(err),
+    })
+  }, [])
+
+  /**
+   * Sends queued changes in order. A network failure keeps the change queued (and the optimistic state on screen);
+   * a real rejection (permissions, validation) drops that one change, tells the user, and the re-fetch shows the truth.
+   */
+  const flush = useCallback(async () => {
+    if (!ctx || flushing.current || queueRef.current.length === 0) return
+    flushing.current = true
+    setSyncing(true)
+    inflightWrites.current++
+    writeEpoch.current++
+    let dropped = false
+    try {
+      while (queueRef.current.length > 0) {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          setOffline(true)
+          break
+        }
+        const head = queueRef.current[0]
+        inflightQid.current = head.qid
+        let err: { message: string } | null
+        try {
+          err = await runOp(ctx, head.op)
+        } catch (e) {
+          err = { message: e instanceof Error ? e.message : 'error' }
+        }
+        inflightQid.current = null
+        if (err && isNetworkError(err)) {
+          setOffline(true)
+          break
+        }
+        setQueue(queueRef.current.filter((q) => q.qid !== head.qid))
+        if (err) {
+          dropped = true
+          report(err)
+        }
+      }
+    } finally {
+      inflightQid.current = null
+      inflightWrites.current--
       writeEpoch.current++
-      let err: { message: string } | null = null
-      try {
-        err = await op()
-      } catch (e) {
-        err = { message: e instanceof Error ? e.message : 'error' }
-      } finally {
-        inflightWrites.current--
-        writeEpoch.current++
-      }
-      if (err) {
-        // Revert the optimistic change to the last state the server confirmed.
-        dispatch({ type: 'replace', ...serverSnapshot.current })
-        if (isNetworkError(err)) setOffline(true)
-        setActionError({ id: ++errId.current, message: isNetworkError(err) ? 'You appear to be offline. That change wasn’t saved.' : /immutable|not_a_participant|row-level|permission/i.test(err.message) ? 'You don’t have permission to do that.' : friendlyWorkspaceError(err) === 'Something went wrong. Please try again.' ? 'That change couldn’t be saved. Please try again.' : friendlyWorkspaceError(err) })
-      }
-      void refetch()
+      flushing.current = false
+      setSyncing(false)
+    }
+    if (dropped || queueRef.current.length === 0) void refetch()
+  }, [ctx, refetch, report, setQueue])
+
+  useEffect(() => {
+    flushRef.current = flush
+  }, [flush])
+
+  // Anything left from a previous session goes out as soon as we know who we are.
+  useEffect(() => {
+    if (ctx) queueMicrotask(() => void flushRef.current())
+  }, [ctx])
+
+  /** Optimistic apply -> persist in the queue -> send. Works identically online and offline. */
+  const submit = useCallback(
+    (op: Op) => {
+      if (!ctx) return
+      for (const a of opActions(op, { memberIds: memberIdsRef.current })) dispatch(a)
+      setQueue(enqueue(queueRef.current, { qid: crypto.randomUUID(), op }, inflightQid.current))
+      void flushRef.current()
     },
-    [refetch],
+    [ctx, setQueue],
   )
 
   const nowIso = () => new Date().toISOString()
@@ -176,43 +282,35 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
       const t = state.tasks.find((x) => x.id === id)
       if (!t || !ctx) return
       const completing = t.status !== 'completed'
-      dispatch({ type: 'taskPatch', id, patch: completing ? { status: 'completed', completedAt: nowIso(), completedBy: uid } : { status: 'open', completedAt: undefined, completedBy: undefined } })
       if (completing) dispatch({ type: 'pulse' })
-      void write(() => setTaskCompleted(ctx, id, completing))
+      submit({ type: 'task.complete', id, completed: completing, by: uid, at: nowIso() })
     },
-    [state.tasks, ctx, uid, write],
+    [state.tasks, ctx, uid, submit],
   )
 
   const addTask = useCallback(
     (i: NewTaskInput) => {
       if (!ctx) return
-      const id = crypto.randomUUID()
-      dispatch({
-        type: 'task',
-        task: { id, kind: i.kind, title: i.title.trim(), notes: i.notes?.trim() || undefined, createdBy: uid, createdAt: nowIso(), notifySecondUser: i.notifySecondUser, date: i.date, time: i.time, dueAt: i.dueAt, status: 'open' },
-      })
-      void write(() => insertTask(ctx, id, i))
+      submit({ type: 'task.insert', id: crypto.randomUUID(), input: i, createdBy: uid, at: nowIso() })
     },
-    [ctx, uid, write],
+    [ctx, uid, submit],
   )
 
   const updateTask = useCallback(
     (id: string, p: UpdateTaskInput) => {
       const t = state.tasks.find((x) => x.id === id)
       if (!t || !ctx) return
-      dispatch({ type: 'taskPatch', id, patch: { ...p, notes: p.notes === undefined ? t.notes : p.notes || undefined } })
-      void write(() => patchTask(ctx, id, p, t.kind))
+      submit({ type: 'task.patch', id, patch: p, kind: t.kind })
     },
-    [state.tasks, ctx, write],
+    [state.tasks, ctx, submit],
   )
 
   const deleteTask = useCallback(
     (id: string) => {
       if (!ctx) return
-      dispatch({ type: 'taskRemove', id })
-      void write(() => removeTask(ctx, id))
+      submit({ type: 'task.delete', id })
     },
-    [ctx, write],
+    [ctx, submit],
   )
 
   const toggleHabit = useCallback(
@@ -220,43 +318,35 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
       const h = state.habits.find((x) => x.id === id)
       if (!h || !ctx || !h.participants.includes(uid)) return
       const done = h.log[uid]?.[today]?.status === 'done'
-      dispatch({ type: 'log', id, user: uid, day: today, entry: done ? null : { status: 'done', at: nowIso() } })
       if (!done) dispatch({ type: 'pulse' })
-      void write(() => writeMyHabitLog(ctx, id, today, done ? null : 'done'))
+      submit({ type: 'habit.log', habitId: id, day: today, status: done ? null : 'done', by: uid, at: nowIso() })
     },
-    [state.habits, ctx, uid, today, write],
+    [state.habits, ctx, uid, today, submit],
   )
 
   const markHabitMissed = useCallback(
     (id: string) => {
       const h = state.habits.find((x) => x.id === id)
       if (!h || !ctx || !h.participants.includes(uid)) return
-      dispatch({ type: 'log', id, user: uid, day: today, entry: { status: 'missed' } })
-      void write(() => writeMyHabitLog(ctx, id, today, 'missed'))
+      submit({ type: 'habit.log', habitId: id, day: today, status: 'missed', by: uid, at: nowIso() })
     },
-    [state.habits, ctx, uid, today, write],
+    [state.habits, ctx, uid, today, submit],
   )
 
   const addHabit = useCallback(
     (i: NewHabitInput) => {
       if (!ctx) return
-      const id = crypto.randomUUID()
-      dispatch({
-        type: 'habit',
-        habit: { id, title: i.title.trim(), notes: i.notes?.trim() || undefined, createdBy: uid, notifySecondUser: i.notifySecondUser, participants: i.shared ? memberIdsRef.current : [uid], schedule: i.schedule, paused: false, startDate: today, log: {} },
-      })
-      void write(() => insertHabit(ctx, id, i, today))
+      submit({ type: 'habit.insert', id: crypto.randomUUID(), input: i, startDate: today, createdBy: uid })
     },
-    [ctx, uid, today, write],
+    [ctx, uid, today, submit],
   )
 
   const updateHabit = useCallback(
     (id: string, p: UpdateHabitInput) => {
       if (!ctx) return
-      dispatch({ type: 'habitPatch', id, patch: { ...p, notes: p.notes === undefined ? undefined : p.notes || undefined } as Partial<Habit> })
-      void write(() => patchHabit(ctx, id, p))
+      submit({ type: 'habit.patch', id, patch: p })
     },
-    [ctx, write],
+    [ctx, submit],
   )
 
   const setHabitPaused = useCallback((id: string, paused: boolean) => updateHabit(id, { paused }), [updateHabit])
@@ -264,15 +354,14 @@ export function RemoteAppProvider({ children }: { children: ReactNode }) {
   const deleteHabit = useCallback(
     (id: string) => {
       if (!ctx) return
-      dispatch({ type: 'habitRemove', id })
-      void write(() => removeHabit(ctx, id))
+      submit({ type: 'habit.delete', id })
     },
-    [ctx, write],
+    [ctx, submit],
   )
 
   const syncInfo = useMemo<SyncInfo>(
-    () => ({ remote: true, state: offline ? 'offline' : sync === 'live' ? 'live' : 'polling', loading, loadError, actionError, retry: () => void refetch() }),
-    [offline, sync, loading, loadError, actionError, refetch],
+    () => ({ remote: true, state: offline ? 'offline' : sync === 'live' ? 'live' : 'polling', loading, loadError, actionError, pending, syncing, lastSyncedAt, retry: () => { void flushRef.current(); void refetch() } }),
+    [offline, sync, loading, loadError, actionError, pending, syncing, lastSyncedAt, refetch],
   )
 
   const value = useMemo<AppCtx>(

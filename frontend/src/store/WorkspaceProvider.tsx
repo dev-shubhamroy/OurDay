@@ -4,6 +4,7 @@ import { friendlyWorkspaceError } from '../lib/authErrors'
 import { createDebouncer, watchTables } from '../lib/realtime'
 import { supabase } from '../lib/supabase'
 import { loadWorkspace } from '../services/remote/workspace'
+import { loadWorkspaceCache, saveWorkspaceCache } from '../services/offline/cache'
 import { WorkspaceContext, type ActionResult, type InvitationInfo, type InvitationStatus, type WorkspaceCtx, type WorkspaceMember, type WorkspaceStatus } from './workspaceContext'
 
 /** Knows which workspace the signed-in user belongs to and who their partner is. Live-updates when the partner joins. */
@@ -31,11 +32,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setWorkspace(loaded.workspace)
         setMembers(loaded.members)
         setStatus('ready')
+        saveWorkspaceCache(uid, loaded)
       }
     } catch {
       if (mine === seq.current) {
         setLoadedFor(uid)
-        setStatus((s) => (s === 'ready' ? s : 'error'))
+        // Offline (or the server is down): fall back to the last known workspace so the app still opens.
+        const cached = loadWorkspaceCache(uid)
+        if (cached) {
+          setWorkspace((w) => w ?? cached.workspace)
+          setMembers((m) => (m.length ? m : cached.members))
+          setStatus('ready')
+        } else setStatus((s) => (s === 'ready' ? s : 'error'))
       }
     }
   }, [uid])

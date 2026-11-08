@@ -41,3 +41,15 @@ different new users run `select public.accept_invitation('<code>')` at the same 
 4. **Project Settings → API:** copy the Project URL and the **publishable (anon)** key into `frontend/.env.local`. Never use or share the `service_role` key.
 5. *Optional hardening once both of you have accounts:* Authentication → Sign In / Providers → turn **"Allow new users to sign up" OFF**. With no email verification, anyone who finds the URL could otherwise create an account (they still could not see your data or join your workspace without an invitation).
 6. Emails: with verification off, sign-up sends no email. Only password-reset emails are sent; Supabase's built-in sender is rate-limited and for light testing, which is plenty for two people. Custom SMTP is optional.
+
+
+## Android push setup (migration 6 + Edge Function) — one-time, needs your approval
+Nothing here is applied automatically. VAPID keys were generated; the public key is in `frontend/src/services/push.ts`, the private key is kept outside the repo (never commit it).
+1. `supabase db push --remote cncvntgqzfsxfzkeeiti` (applies `20261110100000_web_push.sql`; additive).
+2. `supabase secrets set --project-ref cncvntgqzfsxfzkeeiti VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID_SUBJECT=mailto:<you> PUSH_SECRET=<random string>`
+3. `supabase functions deploy send-push --project-ref cncvntgqzfsxfzkeeiti --no-verify-jwt`
+4. In the SQL Editor: `insert into public.push_config (function_url, secret) values ('https://cncvntgqzfsxfzkeeiti.supabase.co/functions/v1/send-push', '<same PUSH_SECRET>');`
+5. Run `tests/push_security.sql` (11 checks, rolls back). Check Database → Extensions that `pg_net` and `pg_cron` are on.
+
+### Real-device tests still required (simulated tests cannot prove these)
+Install via Chrome → Install app; splash + icon + standalone; Android Back behaviour; turn on Phone notifications; close the app and get a deadline reminder, habit 9:30 PM check-in with Yes/No, partner alert; no duplicates; airplane-mode open + edit + reconnect sync; OEM battery optimisation (Xiaomi/Samsung/etc.) does not drop pushes.
