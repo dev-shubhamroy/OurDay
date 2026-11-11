@@ -7,7 +7,7 @@ import { AuthSplash } from '../../components/layout/AuthGuards'
 import { Button } from '../../components/ui/Button'
 import { useAuth } from '../../hooks/useAuth'
 import { useWorkspace } from '../../hooks/useWorkspace'
-import { extractInviteCode, looksLikeInviteCode } from '../../services/invite'
+import { extractInviteCode, joinPath, loadPendingInvite, looksLikeInviteCode } from '../../services/invite'
 
 /** First-run: the first person creates the workspace; the second joins with an invitation. */
 export default function Setup() {
@@ -37,10 +37,9 @@ export default function Setup() {
     if (!looksLikeInviteCode(c)) return setError('That doesn’t look like an invitation link or code.')
     setError(null)
     setBusy('join')
-    const r = await ws.acceptInvitation(c)
+    // Go through the confirmation screen so the person sees who is inviting them before anything changes.
     setBusy(null)
-    if (r.error) return setError(r.error)
-    navigate('/today', { replace: true })
+    navigate(joinPath(c))
   }
 
   return (
@@ -55,6 +54,16 @@ export default function Setup() {
     >
       <div className="space-y-6">
         {error && <FormMessage tone="error">{error}</FormMessage>}
+
+        {loadPendingInvite() && (
+          <section className="rounded-tile border border-accent/30 bg-accent/10 p-4">
+            <h2 className="text-base font-semibold">You have an invitation</h2>
+            <p className="mb-3 mt-1 text-sm text-muted">Finish joining your partner before starting a workspace of your own.</p>
+            <Button size="lg" className="w-full" onClick={() => navigate(joinPath(loadPendingInvite() ?? ''))}>
+              Review invitation
+            </Button>
+          </section>
+        )}
 
         <section>
           <h2 className="mb-1 flex items-center gap-2 text-base font-semibold">

@@ -4,6 +4,7 @@ import { AuthLayout } from '../../components/auth/AuthLayout'
 import { FormMessage, PasswordField, Spinner, TextField } from '../../components/auth/FormParts'
 import { Button } from '../../components/ui/Button'
 import { useAuth } from '../../hooks/useAuth'
+import { loadPendingInvite } from '../../services/invite'
 import { isValidEmail } from '../../services/password'
 
 export default function Login() {
@@ -43,6 +44,7 @@ export default function Login() {
       }
     >
       <form onSubmit={submit} className="space-y-4" noValidate>
+        {loadPendingInvite() && <FormMessage tone="info">Sign in to accept your invitation. We’ll bring you straight back to it.</FormMessage>}
         {error && <FormMessage tone="error">{error}</FormMessage>}
         <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" placeholder="you@example.com" />
         <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="current-password" />

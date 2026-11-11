@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useWorkspace } from '../../hooks/useWorkspace'
+import { joinPath, loadPendingInvite, postAuthDestination } from '../../services/invite'
 import { AppData } from '../../store/AppData'
 import { Button } from '../ui/Button'
 import { AuroraCard } from '../ui/AuroraCard'
@@ -31,7 +32,8 @@ export function PublicOnly() {
   if (status === 'loading') return <AuthSplash />
   if ((status === 'signedIn' && !recovering) || status === 'disabled') {
     const from = (location.state as { from?: string } | null)?.from
-    return <Navigate to={from && !from.startsWith('/login') ? from : '/today'} replace />
+    // A remembered invitation is finished before anything else (it survives sign-in, registration and relaunches).
+    return <Navigate to={postAuthDestination(from, loadPendingInvite())} replace />
   }
   return <Outlet />
 }
@@ -55,6 +57,9 @@ export function RequireWorkspace() {
       </div>
     )
   }
-  if (status === 'none') return <Navigate to="/setup" replace />
+  if (status === 'none') {
+    const pending = loadPendingInvite()
+    return <Navigate to={pending ? joinPath(pending) : '/setup'} replace />
+  }
   return <AppData />
 }

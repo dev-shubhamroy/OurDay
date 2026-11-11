@@ -1,7 +1,8 @@
 import { Check, Copy, Link2, RefreshCw, ShieldOff } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useWorkspace } from '../../hooks/useWorkspace'
-import { inviteLink } from '../../services/invite'
+import { extractInviteCode, inviteLink, joinPath, looksLikeInviteCode } from '../../services/invite'
 import type { InvitationInfo, InvitationStatus } from '../../store/workspaceContext'
 import { FormMessage, Spinner } from '../auth/FormParts'
 import { Button } from '../ui/Button'
@@ -48,6 +49,8 @@ export function InvitePartner() {
   const [invite, setInvite] = useState<InvitationInfo | null>(null)
   const [busy, setBusy] = useState<'create' | 'revoke' | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [theirCode, setTheirCode] = useState('')
+  const navigate = useNavigate()
 
   const load = useCallback(async () => {
     const r = await ws.invitationStatus()
@@ -103,6 +106,11 @@ export function InvitePartner() {
         <div className="space-y-3">
           <FormMessage tone="info">Send this to your partner. It works once and expires on {expires(invite.expiresAt)}. It can’t be shown again after you leave this screen.</FormMessage>
           <CopyRow label="Invitation link" value={inviteLink(window.location.origin, invite.code)} />
+          {typeof navigator.share === 'function' && (
+            <Button type="button" variant="soft" size="sm" onClick={() => void navigator.share({ title: 'Join me on OurDay', text: 'Join me on OurDay:', url: inviteLink(window.location.origin, invite.code) }).catch(() => undefined)}>
+              Share…
+            </Button>
+          )}
           <CopyRow label="Invitation code" value={invite.code} />
         </div>
       ) : status?.hasActive ? (
@@ -120,6 +128,21 @@ export function InvitePartner() {
           </Button>
         )}
       </div>
+      <form
+        className="border-t border-line/10 pt-4"
+        onSubmit={(e) => {
+          e.preventDefault()
+          const c = extractInviteCode(theirCode)
+          if (!looksLikeInviteCode(c)) return setError('That doesn’t look like an invitation link or code.')
+          navigate(joinPath(c))
+        }}
+      >
+        <p className="mb-2 text-sm font-medium">Did your partner invite you instead?</p>
+        <div className="flex gap-2">
+          <input value={theirCode} onChange={(e) => setTheirCode(e.target.value)} placeholder="Paste their invitation link or code" aria-label="Invitation link or code" autoComplete="off" spellCheck={false} className="h-11 min-w-0 flex-1 rounded-xl border border-line/15 bg-bg/50 px-3.5 text-sm" />
+          <Button type="submit" variant="ghost" disabled={!theirCode.trim()}>Review</Button>
+        </div>
+      </form>
     </div>
   )
 }

@@ -12,6 +12,7 @@ import { IconButton } from '../ui/IconButton'
 import { FloatingRana } from '../rana/FloatingRana'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
+import { UpdateBanner } from './UpdateBanner'
 import { SyncBanner, SyncPill } from './SyncStatus'
 import { useBackClose } from '../../hooks/useBackClose'
 import { ViewBanner } from './ViewBanner'
@@ -101,6 +102,7 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+      <UpdateBanner />
       <BottomNav onMore={() => setDrawer(true)} moreActive={drawer} />
       <FloatingRana />
       <EditModal target={editing} onClose={() => setEditing(null)} />

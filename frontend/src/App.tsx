@@ -19,6 +19,7 @@ import Settings from './pages/Settings'
 import Shared from './pages/Shared'
 import Today from './pages/Today'
 import Upcoming from './pages/Upcoming'
+import { PendingInviteCapture } from './components/layout/PendingInviteCapture'
 import { PwaBridge } from './pwa/PwaBridge'
 import { hasSeenBriefing } from './services/briefingSeen'
 import { AuthProvider } from './store/AuthProvider'
@@ -42,6 +43,7 @@ export default function App() {
         <WorkspaceProvider>
           <BrowserRouter>
             <PwaBridge />
+            <PendingInviteCapture />
             <Routes>
               <Route element={<PublicOnly />}>
                 <Route path="/login" element={<Login />} />
@@ -49,9 +51,10 @@ export default function App() {
                 <Route path="/forgot-password" element={<ForgotPassword />} />
               </Route>
               <Route path="/reset-password" element={<ResetPassword />} />
+              {/* Public: the invitation is shown (and remembered) before anyone has to sign in. */}
+              <Route path="/join/:code" element={<Join />} />
 
               <Route element={<RequireAuth />}>
-                <Route path="/join/:code" element={<Join />} />
                 <Route path="/setup" element={<Setup />} />
                 <Route element={<RequireWorkspace />}>
                   <Route element={<BriefingGate />}>

@@ -46,6 +46,8 @@ export interface WorkspaceCtx {
   createInvitation: () => Promise<ActionResult<InvitationInfo>>
   revokeInvitation: () => Promise<ActionResult>
   invitationStatus: () => Promise<ActionResult<InvitationStatus>>
+  /** Server-side description of an invitation link for the current person (null data = the server can't preview yet). */
+  previewInvitation: (code: string) => Promise<ActionResult<unknown | null>>
 }
 
 export const WorkspaceContext = createContext<WorkspaceCtx | null>(null)

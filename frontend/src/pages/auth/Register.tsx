@@ -4,6 +4,7 @@ import { AuthLayout } from '../../components/auth/AuthLayout'
 import { FormMessage, PasswordField, Spinner, TextField } from '../../components/auth/FormParts'
 import { Button } from '../../components/ui/Button'
 import { useAuth } from '../../hooks/useAuth'
+import { loadPendingInvite } from '../../services/invite'
 import { isValidEmail, passwordStrength } from '../../services/password'
 
 export default function Register() {
@@ -46,6 +47,7 @@ export default function Register() {
       }
     >
       <form onSubmit={submit} className="space-y-4" noValidate>
+        {loadPendingInvite() && <FormMessage tone="info">Create your account to accept your invitation. We’ll bring you straight back to it.</FormMessage>}
         {error && <FormMessage tone="error">{error}</FormMessage>}
         {notice && <FormMessage tone="info">{notice}</FormMessage>}
         <TextField label="Your name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" placeholder="How your partner sees you" maxLength={60} />

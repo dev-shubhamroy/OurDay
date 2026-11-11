@@ -42,3 +42,10 @@ export function mapMembers(rows: MemberRow[], profiles: { id: string; name: stri
     }))
     .sort((a, b) => (a.role === b.role ? a.joinedAt.localeCompare(b.joinedAt) : a.role === 'owner' ? -1 : 1))
 }
+
+/** Who is inviting, and what accepting would do for the person looking at the link. Works before sign-in. Null if the server can't preview (not deployed yet). */
+export async function fetchInvitationPreview(client: SupabaseClient, code: string): Promise<{ data: unknown; missing: boolean; error: { message?: string } | null }> {
+  const { data, error } = await client.rpc('invitation_preview', { p_code: code })
+  const missing = !!error && ((error as { code?: string }).code === 'PGRST202' || /could not find the function/i.test(error.message ?? ''))
+  return { data: error ? null : data, missing, error: error && !missing ? error : null }
+}

@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { friendlyWorkspaceError } from '../lib/authErrors'
 import { createDebouncer, watchTables } from '../lib/realtime'
 import { supabase } from '../lib/supabase'
-import { loadWorkspace } from '../services/remote/workspace'
+import { fetchInvitationPreview, loadWorkspace } from '../services/remote/workspace'
 import { loadWorkspaceCache, saveWorkspaceCache } from '../services/offline/cache'
 import { WorkspaceContext, type ActionResult, type InvitationInfo, type InvitationStatus, type WorkspaceCtx, type WorkspaceMember, type WorkspaceStatus } from './workspaceContext'
 
@@ -113,13 +113,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return { error: null, data: { hasActive: d.has_active, expiresAt: d.expires_at, memberCount: d.member_count } }
   }, [rpc])
 
+  const previewInvitation = useCallback(async (code: string): Promise<ActionResult<unknown | null>> => {
+    if (!supabase) return { error: 'Sign-in isn’t set up yet.', data: null }
+    try {
+      const r = await fetchInvitationPreview(supabase, code)
+      if (r.missing) return { error: null, data: null }
+      if (r.error) return { error: friendlyWorkspaceError(r.error), data: null }
+      return { error: null, data: r.data }
+    } catch (e) {
+      return { error: friendlyWorkspaceError(e), data: null }
+    }
+  }, [])
+
   const value = useMemo<WorkspaceCtx>(() => {
     const me = members.find((m) => m.id === uid) ?? null
     const partner = members.find((m) => m.id !== uid) ?? null
     const effective: WorkspaceStatus = !signedIn ? 'idle' : !sameUser ? 'loading' : status
     const visible = signedIn && sameUser
-    return { status: effective, workspace: visible ? workspace : null, members: visible ? members : [], me: visible ? me : null, partner: visible ? partner : null, isOwner: visible && me?.role === 'owner', refresh, createWorkspace, acceptInvitation, createInvitation, revokeInvitation, invitationStatus }
-  }, [signedIn, sameUser, status, workspace, members, uid, refresh, createWorkspace, acceptInvitation, createInvitation, revokeInvitation, invitationStatus])
+    return { status: effective, workspace: visible ? workspace : null, members: visible ? members : [], me: visible ? me : null, partner: visible ? partner : null, isOwner: visible && me?.role === 'owner', refresh, createWorkspace, acceptInvitation, createInvitation, revokeInvitation, invitationStatus, previewInvitation }
+  }, [signedIn, sameUser, status, workspace, members, uid, refresh, createWorkspace, acceptInvitation, createInvitation, revokeInvitation, invitationStatus, previewInvitation])
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
 }
