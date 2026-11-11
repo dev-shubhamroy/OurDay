@@ -280,6 +280,20 @@ Replaces Midnight Aurora everywhere (web, Android PWA, Mac companion). Graphite 
 - **Offline:** creating/editing/deleting a shared task uses the normal offline queue; requests, approvals, reopen and reminders need a connection and say so (nothing is faked).
 - **Mac companion:** unchanged; it safely ignores shared tasks (tested) and shows the new partner notification rows.
 
+## 11g. Native Android app (`android/`)
+
+- **Scope:** a native Kotlin + Jetpack Compose (Material 3) client that reuses the existing Supabase project (same auth, workspace, tables, RLS). It is an additional client; the web app, the Mac companion and web push are unchanged. No WebView, no second backend.
+- **Structure:** `:domain` (pure Kotlin: habit occurrence rules, streaks, deadline reminder rule, 9:30 PM check-in rules, deterministic RANA, sync queue/engine, notification routing, validation; 80 tests) and `:app` (Room, Supabase gateway, repositories, WorkManager, notifications, Compose UI; 6 tests).
+- **Offline-first:** Room is the UI's source of truth; every change is first written to a persistent op queue (survives restarts), applied locally, then sent by WorkManager with exponential backoff; ops are idempotent (client UUIDs, absolute states, upserts); conflicts never overwrite newer server data; item sync states SYNCED/PENDING/SYNCING/FAILED/CONFLICT.
+- **Rules reused, not reinvented:** the backend keeps creating deadline reminders, partner alerts and the 9:30 PM check-in rows; Android only adds a local 9:30 PM check-in (WorkManager, best effort, not exact) with Yes/No actions that write the person's own habit log.
+- **Native push:** FCM foundation only (needs the owner's `google-services.json` and a server sender); the prepared migration `20261112100000_android_device_tokens.sql` (one delivery route per device, own-rows RLS) is NOT applied. Web Push is untouched; a phone must use one route to avoid duplicates.
+- **Visual parity:** the Android UI uses the web's tokens (Fusion palette, Manrope + Inter, radii 20/14/12/16, flat aurora-bordered cards, deadline edge, check buttons, urgency badges) via reusable Compose primitives.
+- **Partner Mode on Android:** a header toggle (Today, Tasks, Habits), remembered across restarts, resolved against partner presence; a viewing filter only (never the account/workspace); shared tasks and habits stay available in both modes; a partner's personal habit is read-only; each person's completion stays independent.
+- **RANA on Android:** greeting, saved quote ("JUST KNOW THAT –", hidden when empty), deadlines needing attention, today's plan, one closing action; no intro text, counts or commentary.
+- **Widget:** "OurDay · Today" (Jetpack Glance) from the same Room data: today's tasks, what is left, next deadline, complete from the widget, deep links, refresh after changes/syncs (no polling).
+- **Notifications:** native notifications come from the backend's existing `notifications` rows (checked about every 15 minutes, no Firebase); instant push (FCM) is prepared (device-token migration + `send-push` FCM branch, unapplied/undeployed) and needs the owner's Firebase project; one delivery route per device so Web Push and FCM never both notify one phone.
+- **Status honesty:** built and unit-tested; not yet installed or run on a phone/emulator. See `android/IMPLEMENTATION_STATUS.md`.
+
 ## 12. Status
 ### Implemented frontend functionality
 - Dark / light / system theme with tokens; responsive shell (sidebar on desktop, drawer on mobile); translucent sidebar with live badges and a two-user "in sync" card.

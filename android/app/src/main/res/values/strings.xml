@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">OurDay</string>
+    <string name="widget_description">Today’s tasks, what is left, and your next deadline.</string>
+</resources>

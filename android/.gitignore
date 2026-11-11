@@ -1,0 +1,18 @@
+# Android / Gradle
+.gradle/
+build/
+*/build/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+# Secrets and local config: never commit
+*.jks
+*.keystore
+google-services.json
+app/src/*/google-services.json
+.env
+.env.*
+!.env.example
