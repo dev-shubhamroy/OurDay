@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ourday.app.BuildConfig
 import com.ourday.app.data.prefs.ThemeMode
+import com.ourday.app.notifications.FloatingRanaScheduler
 import com.ourday.app.notifications.Notifier
 import com.ourday.app.sync.SyncStatus
 import com.ourday.app.ui.AppUi
@@ -44,14 +45,13 @@ import kotlinx.coroutines.launch
 import java.time.ZoneId
 
 @Composable
-fun MoreScreen(ui: AppUi, onRana: () -> Unit, onSettings: () -> Unit, onPast: () -> Unit, onSync: () -> Unit) {
+fun MoreScreen(ui: AppUi, onSettings: () -> Unit, onSync: () -> Unit, onInspiration: () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         ScreenHeader("More")
-        MoreRow(Icons.Rounded.AutoAwesome, "RANA briefing", "Your deadlines and today’s plan", onRana)
-        MoreRow(Icons.Rounded.History, "Past and missed", "Overdue deadlines and open tasks from earlier days", onPast)
         MoreRow(Icons.Rounded.Sync, "Sync and offline", when { ui.pending > 0 -> "${ui.pending} change${if (ui.pending == 1) "" else "s"} waiting"; ui.issues.isNotEmpty() -> "${ui.issues.size} need attention"; else -> "Everything is saved" }, onSync)
         MoreRow(Icons.Rounded.Settings, "Settings", "Account, appearance, notifications", onSettings)
-        Spacer(Modifier.height(112.dp))
+        MoreRow(Icons.Rounded.FormatQuote, "Inspiration Library", "Save quotes that inspire you.", onInspiration)
+        Spacer(Modifier.height(150.dp))
     }
 }
 
@@ -113,84 +113,6 @@ fun SyncScreen(ui: AppUi, onBack: () -> Unit, onSyncNow: () -> Unit, onDismiss: 
     }
 }
 
-// ---- RANA: greeting, saved quote, deadlines, today's plan, one closing action ----------------------------------------------------
-
-@Composable
-fun RanaScreen(h24: Boolean, onBack: () -> Unit, vm: RanaViewModel = hiltViewModel()) {
-    val brief by vm.brief.collectAsState()
-    LaunchedEffect(Unit) { vm.load() }
-    DisposableEffect(Unit) { onDispose { vm.markShown() } }
-    val b = brief
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Od.accent.copy(alpha = 0.10f), Od.bg, Od.bg)))) {
-        if (b == null) { LoadingState("Preparing your briefing"); return@Box }
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 8.dp, bottom = 40.dp)) {
-            item {
-                Row(Modifier.statusBarsPadding().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack, Modifier.size(48.dp)) { Icon(Icons.Rounded.Close, "Close briefing", tint = Od.muted) }
-                    Spacer(Modifier.weight(1f)); RanaMark(36.dp)
-                }
-            }
-            // A. greeting: nothing underneath it
-            item { Text(b.greeting, style = MaterialTheme.typography.displaySmall, color = Od.fg, modifier = Modifier.padding(top = 18.dp, bottom = 8.dp)) }
-            // B. the saved quote (hidden when the Inspiration Library is empty)
-            b.quote?.let { q ->
-                item {
-                    Row(Modifier.padding(top = 18.dp).height(IntrinsicSize.Min)) {
-                        Box(Modifier.width(3.dp).fillMaxHeight().background(Od.accent, RoundedCornerShape(3.dp)))
-                        Column(Modifier.padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Eyebrow("JUST KNOW THAT –", color = Od.accent)
-                            Text("“${q.text}”", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp, lineHeight = 32.sp), color = Od.fg)
-                            q.author?.let { Text("— $it", style = MaterialTheme.typography.bodyMedium, color = Od.muted) }
-                        }
-                    }
-                }
-            }
-            // C. deadlines that need attention
-            if (b.deadlines.isNotEmpty()) {
-                item { RanaSection("Deadlines", Icons.Rounded.Flag, Od.danger) }
-                items(b.deadlines.size) { i ->
-                    val a = b.deadlines[i]
-                    val tone = if (a.level == AttentionLevel.APPROACHING) Od.warn else Od.danger
-                    OdCard(Modifier.fillMaxWidth().padding(vertical = 4.dp), tone, if (a.level == AttentionLevel.APPROACHING) 0.38f else 0.5f, OdShapes.deadline) {
-                        Column(Modifier.deadlineEdge(tone).padding(start = 20.dp, end = 14.dp, top = 12.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(a.title, style = MaterialTheme.typography.titleMedium, color = Od.fg, modifier = Modifier.weight(1f))
-                                Pill(a.status, tone, fillAlpha = 0.12f, lineAlpha = 0.25f)
-                            }
-                            Text(a.detail, style = MaterialTheme.typography.bodyMedium, color = Od.muted)
-                            a.ownerName?.let { Text("$it’s", style = MaterialTheme.typography.bodySmall, color = Od.partner) }
-                        }
-                    }
-                }
-            }
-            // D. today's plan, in order
-            if (b.plan.isNotEmpty()) {
-                item { RanaSection("Today’s plan", Icons.Rounded.Checklist, Od.accent) }
-                items(b.plan.size) { i ->
-                    val p = b.plan[i]
-                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Text(p.timeText, style = MaterialTheme.typography.labelLarge, color = Od.accent, modifier = Modifier.width(72.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(p.title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = Od.fg)
-                            Text(listOfNotNull(p.detail.takeIf { it != "Planned task" }, p.ownerName?.let { "$it’s" }).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = Od.muted)
-                        }
-                    }
-                }
-            }
-            // E. closing: one action, no sign-off text
-            item { OdButton("Let’s get started", onBack, Modifier.fillMaxWidth().padding(top = 28.dp)) }
-        }
-    }
-}
-
-@Composable
-private fun RanaSection(title: String, icon: ImageVector, tint: androidx.compose.ui.graphics.Color) {
-    Row(Modifier.padding(top = 30.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(Modifier.size(28.dp).background(tint.copy(alpha = 0.12f), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) { Icon(icon, null, Modifier.size(15.dp), tint = tint) }
-        Text(title, style = MaterialTheme.typography.titleLarge, color = Od.fg)
-    }
-}
-
 // ---- Settings -----------------------------------------------------------------------------------------------------------------------
 
 @Composable
@@ -207,6 +129,9 @@ fun SettingsScreen(ui: AppUi, email: String, onBack: () -> Unit, vm: SettingsVie
     var permitted by remember { mutableStateOf(Notifier.canPost(ctx)) }
     var confirmSignOut by remember { mutableStateOf<Int?>(null) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { permitted = it }
+    val floatingRana by vm.floatingRana.collectAsState()
+    var explainOverlay by remember { mutableStateOf(false) }
+    val overlayLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { if (FloatingRanaScheduler.canDraw(ctx)) vm.setFloatingRana(true) else SnackbarController.show("Permission not granted, so the floating briefing stays off.") }
     LaunchedEffect(Unit) { vm.load() }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -232,6 +157,12 @@ fun SettingsScreen(ui: AppUi, email: String, onBack: () -> Unit, vm: SettingsVie
             } else Text("Allowed on this phone.", style = MaterialTheme.typography.bodyMedium, color = Od.ok)
             SwitchRow("Show OurDay notifications on this phone", "Deadline reminders, shared-task requests and partner activity, checked about every 15 minutes while the phone is online. Turn off “Phone notifications” in the OurDay web app on this phone to avoid seeing each one twice.", nativeAlerts, vm::setNativeAlerts)
             SwitchRow("9:30 PM habit check-in on this phone", "Asks about habits you haven’t answered yet. Android may run it a few minutes late.", localCheckIn, vm::setLocalCheckIn)
+            SwitchRow("Floating RANA every 3 hours", "A small RANA window over other apps with your quote, top deadline and plan. Needs “Display over other apps”. Android may delay it by minutes or more (battery saver, Doze); it never shows over the lock screen and always has a Dismiss button.", floatingRana, { v ->
+                if (!v) vm.setFloatingRana(false)
+                else if (FloatingRanaScheduler.canDraw(ctx)) vm.setFloatingRana(true)
+                else explainOverlay = true
+            })
+            if (floatingRana) OdButton("Show it now", { FloatingRanaScheduler.showNow(ctx) }, style = OdButtonStyle.Soft, icon = Icons.Rounded.AutoAwesome)
             server?.let { s ->
                 Text("Shared with the web app and Mac", style = MaterialTheme.typography.labelLarge, color = Od.fg, modifier = Modifier.padding(top = 6.dp))
                 SwitchRow("Notifications", "Master switch for every device.", s.master, { v -> vm.saveServer { it.copy(master = v) } })
@@ -256,6 +187,10 @@ fun SettingsScreen(ui: AppUi, email: String, onBack: () -> Unit, vm: SettingsVie
         }
         Spacer(Modifier.height(112.dp))
     }
+    if (explainOverlay) ConfirmationDialog(
+        "Allow display over other apps?", "To show the floating RANA briefing, Android needs you to turn on “Display over other apps” for OurDay on the next screen. OurDay only uses it for this small briefing window, never over the lock screen. You can turn it off any time here or in system settings.",
+        "Continue", false, { explainOverlay = false; overlayLauncher.launch(FloatingRanaScheduler.permissionIntent(ctx)) }, { explainOverlay = false },
+    )
     confirmSignOut?.let { n ->
         ConfirmationDialog(
             "Sign out?", if (n > 0) "$n change${if (n == 1) "" else "s"} haven’t synced yet and will be lost. Sync first if you can." else "This phone will forget your data. Your account and everything on the server stay as they are.",

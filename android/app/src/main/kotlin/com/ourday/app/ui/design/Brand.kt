@@ -1,6 +1,12 @@
 package com.ourday.app.ui.design
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.ourday.app.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,23 +27,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ourday.app.ui.theme.Od
 
-/** RANA's mark: a calm visor with two eyes (the same identity as the web favicon and the Mac window). */
+/** RANA's official avatar: the supplied bull image, shown undistorted (Fit) on a dark disc. The image's own transparency is preserved. */
 @Composable
 fun RanaMark(size: Dp = 40.dp, modifier: Modifier = Modifier) {
-    val accent = Od.accent
-    Canvas(modifier.size(size).semantics { contentDescription = "RANA" }) {
-        val s = this.size.minDimension
-        drawRoundRect(Brush.linearGradient(listOf(Color(0xFF1A2A42), Color(0xFF080D18))), size = Size(s, s), cornerRadius = CornerRadius(s * 0.28f))
-        val faceW = s * 0.64f
-        val faceH = s * 0.40f
-        val left = (s - faceW) / 2
-        val top = (s - faceH) / 2
-        drawRoundRect(Color(0xFF0B1220), Offset(left, top), Size(faceW, faceH), CornerRadius(faceH * 0.45f))
-        drawRoundRect(accent.copy(alpha = 0.55f), Offset(left, top), Size(faceW, faceH), CornerRadius(faceH * 0.45f), style = Stroke(s * 0.03f))
-        val eyeW = s * 0.11f
-        val eyeH = s * 0.15f
-        drawRoundRect(accent, Offset(s * 0.5f - eyeW * 1.9f, s * 0.5f - eyeH / 2), Size(eyeW, eyeH), CornerRadius(eyeW / 2))
-        drawRoundRect(accent, Offset(s * 0.5f + eyeW * 0.9f, s * 0.5f - eyeH / 2), Size(eyeW, eyeH), CornerRadius(eyeW / 2))
+    Box(modifier.size(size).background(Color(0xFF1A1A20), CircleShape).border(1.dp, Od.accent.copy(alpha = 0.55f), CircleShape).clip(CircleShape), contentAlignment = Alignment.Center) {
+        Image(painterResource(R.drawable.rana_bull), "RANA", Modifier.fillMaxSize().padding(size * 0.08f), contentScale = ContentScale.Fit)
     }
 }
 

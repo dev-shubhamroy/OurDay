@@ -43,9 +43,9 @@ import com.ourday.domain.notify.Destination
 private enum class Tab(val route: String, val label: String, val icon: ImageVector, val iconSelected: ImageVector) {
     HOME("home", "Home", Icons.Outlined.Home, Icons.Rounded.Home),
     TODAY("today", "Today", Icons.Outlined.EventAvailable, Icons.Rounded.EventAvailable),
-    DEADLINES("deadlines", "Deadlines", Icons.Outlined.Timer, Icons.Rounded.Timer),
-    HABITS("habits", "Habits", Icons.Outlined.Repeat, Icons.Rounded.Repeat),
-    MORE("more", "More", Icons.Outlined.Menu, Icons.Rounded.Menu),
+    DEADLINES("deadlines", "Deadlines", Icons.Outlined.TrackChanges, Icons.Rounded.TrackChanges),
+    HABITS("habits", "Habits", Icons.Outlined.LocalFireDepartment, Icons.Rounded.LocalFireDepartment),
+    MORE("more", "More", Icons.Outlined.GridView, Icons.Rounded.GridView),
 }
 
 /** Routes that show the shared header (logo, bell, Partner Mode switch). */
@@ -83,6 +83,12 @@ private fun AppShell(auth: AuthState.SignedIn, deepLink: Destination?, onDeepLin
     val snackbar = remember { SnackbarHostState() }
     val ctx = LocalContext.current
 
+    val notifVm: NotificationsViewModel = hiltViewModel()
+    val notifState by notifVm.state.collectAsState()
+    val unread by notifVm.unread.collectAsState()
+    LaunchedEffect(ui?.lastSync) { notifVm.load() }
+    var pending by remember { mutableStateOf<Destination?>(null) }
+    var addMenu by remember { mutableStateOf(false) }
     var taskEditor by remember { mutableStateOf<TaskEditorState?>(null) }
     var habitEditor by remember { mutableStateOf<HabitEditorState?>(null) }
 
@@ -94,8 +100,9 @@ private fun AppShell(auth: AuthState.SignedIn, deepLink: Destination?, onDeepLin
     LaunchedEffect(Unit) { if (!asked && Build.VERSION.SDK_INT >= 33 && !Notifier.canPost(ctx)) { asked = true; permission.launch(Manifest.permission.POST_NOTIFICATIONS) } }
 
     // Notification taps and ourday:// links.
-    LaunchedEffect(deepLink, ui?.data?.tasks?.size) {
-        val d = deepLink ?: return@LaunchedEffect
+    LaunchedEffect(deepLink) { if (deepLink != null) { pending = deepLink; onDeepLinkHandled() } }
+    LaunchedEffect(pending, ui?.data?.tasks?.size) {
+        val d = pending ?: return@LaunchedEffect
         when (d) {
             Destination.Today -> nav.navigateTab(Tab.TODAY.route)
             Destination.Habits -> nav.navigateTab(Tab.HABITS.route)
@@ -107,7 +114,7 @@ private fun AppShell(auth: AuthState.SignedIn, deepLink: Destination?, onDeepLin
                 taskEditor = TaskEditorState(t, t.kind)
             }
         }
-        onDeepLinkHandled()
+        pending = null
     }
 
     val showTabs = Tab.entries.any { it.route == route } || route in TAB_BAR_EXTRA_ROUTES
@@ -116,24 +123,16 @@ private fun AppShell(auth: AuthState.SignedIn, deepLink: Destination?, onDeepLin
         containerColor = Od.bg,
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (showTabs) Column {
-                androidx.compose.material3.HorizontalDivider(color = Od.line(0.10f))
-                NavigationBar(containerColor = Od.bg, tonalElevation = 0.dp) {
-                    Tab.entries.forEach { t ->
-                        val selected = backEntry?.destination?.hierarchy?.any { it.route == t.route } == true
-                        NavigationBarItem(
-                            selected = selected, onClick = { nav.navigateTab(t.route) }, icon = { Icon(if (selected) t.iconSelected else t.icon, null, Modifier.size(26.dp)) },
-                            label = { Text(t.label, style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp), maxLines = 1) },
-                            colors = NavigationBarItemDefaults.colors(selectedIconColor = Od.accent, selectedTextColor = Od.accent, indicatorColor = Od.accent.copy(alpha = 0.16f), unselectedIconColor = Od.fg.copy(alpha = 0.72f), unselectedTextColor = Od.fg.copy(alpha = 0.72f)),
-                        )
-                    }
-                }
-            }
+            if (showTabs) OurDayNavBar(
+                Tab.entries.map { NavItem(it.route, it.label, it.icon) },
+                selected = { t -> backEntry?.destination?.hierarchy?.any { it.route == t.route } == true },
+                onSelect = { nav.navigateTab(it.route) },
+            )
         },
     ) { padding ->
         val u = ui
         Column(Modifier.padding(padding).consumeWindowInsets(padding)) {
-            if (u != null && route in HEADER_ROUTES) AppHeader(u, vm::setMode, onBell = { nav.navigate("settings") { launchSingleTop = true } }, divider = route != Tab.HOME.route)
+            if (u != null && route in HEADER_ROUTES) AppHeader(u, vm::setMode, onBell = { nav.navigate("notifications") { launchSingleTop = true } }, divider = route != Tab.HOME.route, unread = unread > 0)
             Box(Modifier.weight(1f)) {
             if (u == null) LoadingState("Loading") else NavHost(
                 nav, startDestination = Tab.HOME.route,
@@ -157,16 +156,27 @@ private fun AppShell(auth: AuthState.SignedIn, deepLink: Destination?, onDeepLin
                 composable(Tab.HABITS.route) { HabitsScreen(u, { habitEditor = HabitEditorState(it) }, { habitEditor = HabitEditorState(null) }, { h, day, st -> vm.setHabitDay(h.id, day, st) }) }
                 composable("tasks") { TasksScreen(u, { taskEditor = TaskEditorState(it, it.kind) }, { vm.setCompleted(it, it.isOpen) }, vm::setMode, onBack = { nav.popBackStack() }) }
                 composable("shared") { SharedScreen(u, { taskEditor = TaskEditorState(it, it.kind) }, { f, id, approve, msg, done -> vm.shared(f, id, approve, msg, done) }, onBack = { nav.popBackStack() }) }
-                composable(Tab.MORE.route) { MoreScreen(u, { nav.navigate("rana") }, { nav.navigate("settings") }, { nav.navigate("past") }, { nav.navigate("sync") }) }
-                composable("rana") { RanaScreen(u.h24, { nav.popBackStack() }) }
+                composable(Tab.MORE.route) { MoreScreen(u, { nav.navigate("settings") }, { nav.navigate("sync") }, { nav.navigate("inspiration") }) }
+                composable("rana") { RanaScreen(u, { nav.popBackStack() }, { nav.navigateTab(Tab.TODAY.route) }) }
+                composable("notifications") {
+                    NotificationCentreScreen(notifState, { nav.popBackStack() }, notifVm::load, notifVm::markAllRead) { r ->
+                        notifVm.markRead(setOf(r.id))
+                        pending = com.ourday.domain.notify.NotificationRouting.route(r.kind, r.subtype, r.taskId, r.habitId).destination
+                    }
+                }
+                composable("inspiration") { InspirationScreen(u, { nav.popBackStack() }) }
                 composable("settings") { SettingsScreen(u, auth.email, { nav.popBackStack() }) }
                 composable("past") { PastScreen(u, { nav.popBackStack() }, { taskEditor = TaskEditorState(it, it.kind) }, { vm.setCompleted(it, it.isOpen) }) }
                 composable("sync") { SyncScreen(u, { nav.popBackStack() }, vm::refresh, vm::dismissIssue) }
             }
+            if (u != null && Tab.entries.any { it.route == route }) FloatingActions(onRana = { nav.navigate("rana") { launchSingleTop = true } }, onAdd = { addMenu = true })
             }
         }
     }
 
+    if (addMenu) AddMenuSheet(
+        onTask = { taskEditor = TaskEditorState(null, TaskKind.DAILY) }, onDeadline = { taskEditor = TaskEditorState(null, TaskKind.DEADLINE) }, onHabit = { habitEditor = HabitEditorState(null) }, onDismiss = { addMenu = false },
+    )
     ui?.let { u ->
         taskEditor?.let { s ->
             TaskEditorSheet(s.task, u, s.kind, onSave = { i -> if (s.task == null) vm.addTask(i) else vm.editTask(s.task, i) }, onDelete = s.task?.let { t -> { vm.deleteTask(t.id) } }, onDismiss = { taskEditor = null })

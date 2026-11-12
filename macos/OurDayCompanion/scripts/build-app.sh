@@ -8,7 +8,7 @@ rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS"
 swiftc -swift-version 5 -O -module-name OurDayCompanion -target arm64-apple-macos13.0 \
   Sources/CompanionCore/*.swift Sources/OurDayCompanion/*.swift -o "$APP/Contents/MacOS/OurDayCompanion"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
-mkdir -p "$APP/Contents/Resources" && cp -R Resources/Fonts "$APP/Contents/Resources/Fonts"
+mkdir -p "$APP/Contents/Resources" && cp -R Resources/Fonts "$APP/Contents/Resources/Fonts" && cp Resources/rana_bull.png "$APP/Contents/Resources/"
 # Inject the PUBLIC Supabase URL + publishable key from the git-ignored frontend env file (never a secret key).
 ENVF="../../frontend/.env.local"
 [ -f "$ENVF" ] || { echo "Missing $ENVF (needs VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY)"; exit 1; }

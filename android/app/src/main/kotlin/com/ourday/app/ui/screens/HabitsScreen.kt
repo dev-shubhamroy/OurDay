@@ -18,6 +18,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -52,8 +53,8 @@ fun HabitsScreen(ui: AppUi, onEdit: (Habit) -> Unit, onAdd: () -> Unit, onSetDay
     }
     val summary = HabitRules.summary(d.habits, d.memberIds, ui.subject, ui.today, d.logs)
     val filters = if (partner != null || filter == HabitFilter.PARTNER) HabitFilter.entries else HabitFilter.entries - HabitFilter.PARTNER
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-        item { PageHeading("Consistency", "Habits", trailing = { AddButton("Add a habit", onAdd) }) }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 150.dp)) {
+        item { PageHeading("Consistency", "Habits") }
         item { SyncStrip(ui) }
         if (ui.isPartnerView) item { PartnerBanner(partner?.firstName ?: "your partner") }
         item {
@@ -98,7 +99,7 @@ fun HabitCard(h: Habit, ui: AppUi, onEdit: () -> Unit, onSetDay: (LocalDate, Log
     OdCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), Od.line, 0.12f, OdShapes.card, dim = h.paused) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(h.title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold), color = Od.fg, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(h.title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold), color = Od.fg)
                 if (canManage) IconButton(onClick = onEdit, Modifier.size(48.dp)) { Icon(Icons.Outlined.Edit, "Edit ${h.title}", Modifier.size(24.dp), tint = Od.muted) }
                 // The check acts on YOUR OWN record only; a partner's personal habit shows their state read-only.
                 if (iParticipate && !h.paused && myState != DayState.OFF) CheckButton(myState == DayState.DONE, { onSetDay(ui.today, if (myState == DayState.DONE) null else LogStatus.DONE) }, if (myState == DayState.DONE) "Undo: ${h.title}" else "Mark done: ${h.title}", size = 38.dp)
@@ -109,105 +110,77 @@ fun HabitCard(h: Habit, ui: AppUi, onEdit: () -> Unit, onSetDay: (LocalDate, Log
                 Text(HabitRules.scheduleLabel(h) + if (h.paused) " · Paused" else "", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp), color = Od.muted)
                 SyncBadge(h.syncState)
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Current streaks only: one per person (a personal habit shows just its owner).
+            Row(horizontalArrangement = Arrangement.spacedBy(22.dp), verticalAlignment = Alignment.CenterVertically) {
                 participants.forEach { uid ->
-                    val st = HabitRules.dayState(h, uid, ui.today, ui.today, logs)
-                    val label = when (st) { DayState.DONE -> "Done"; DayState.MISSED -> "Missed"; DayState.PENDING -> "Pending"; DayState.OFF -> "Not scheduled today" }
-                    val shape = CircleShape
-                    Row(Modifier.background(Od.elevated.copy(alpha = 0.6f), shape).border(1.dp, Od.line(0.12f), shape).padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Avatar(initials(uid), uid != d.meId, 30.dp)
-                        Text("${name(uid)} · $label", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp), color = when (st) { DayState.DONE -> Od.ok; DayState.MISSED -> Od.danger; else -> Od.fg }, maxLines = 1)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("🔥", fontSize = 22.sp)
+                        Text("${HabitRules.streak(h, uid, ui.today, logs)}", style = MaterialTheme.typography.headlineMedium.copy(fontSize = 26.sp, fontWeight = FontWeight.Bold), color = Od.fg)
+                        Text(if (uid != d.meId) "${name(uid)}’s streak" else if (participants.size > 1) "My streak" else "current streak", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp), color = Od.muted)
                     }
                 }
             }
-            // Statistics: current streak, longest streak and the real completion rate of the last 7 days, per person.
-            val panel = RoundedCornerShape(16.dp)
-            Column(Modifier.fillMaxWidth().border(1.dp, Od.accent.copy(alpha = 0.55f), panel).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                participants.forEach { uid ->
-                    val cur = HabitRules.streak(h, uid, ui.today, logs)
-                    val best = HabitRules.longestStreak(h, uid, ui.today, logs)
-                    val week = HabitRules.completionRate(h, uid, ui.today, logs, 7)
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Avatar(initials(uid), uid != d.meId, 30.dp)
-                            Text(name(uid), style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp), color = Od.fg)
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(36.dp)) {
-                            Stat("Current", Icons.Outlined.LocalFireDepartment, cur)
-                            Stat("Longest", Icons.Outlined.EmojiEvents, best)
-                        }
-                        Text(if (week != null) "$week% this week" else "No scheduled days yet this week", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp), color = Od.fg)
-                    }
-                }
-            }
-            val who = if (ui.subject in participants) ui.subject else participants.firstOrNull()
-            if (who != null) {
-                WeekStrip(HabitRules.week(h, who, ui.today, logs), ui.today)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { expanded = !expanded }, contentPadding = PaddingValues(0.dp)) {
-                        Text(if (expanded) "Hide history" else "History", color = Od.accent); Icon(if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, null, tint = Od.accent)
-                    }
-                }
-                if (expanded) HabitHistory(h, who, ui, logs, canEditDay = who == d.meId, onSetDay = onSetDay)
+            // One calendar for everyone on this habit; each person's completions have their own marker colour.
+            HabitMonthCalendar(h, participants, ui, logs, ::name, d.meId)
+            if (iParticipate && !h.paused) {
+                val y = ui.today.minusDays(1)
+                if (HabitRules.dayState(h, d.meId, y, ui.today, logs) == DayState.MISSED) OdButton("I did it yesterday", { onSetDay(y, LogStatus.DONE) }, style = OdButtonStyle.Soft)
             }
         }
     }
 }
 
 @Composable
-private fun Stat(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, value: Int) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp, letterSpacing = 2.sp), color = Od.muted)
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(icon, null, Modifier.size(26.dp), tint = Od.muted)
-            Text(value.toString(), style = MaterialTheme.typography.headlineMedium.copy(fontSize = 34.sp, fontWeight = FontWeight.Bold), color = Od.fg)
-        }
-    }
-}
+private fun markerColor(uid: String, me: String) = if (uid == me) Od.accent else Od.partner
 
-/** Monday to Sunday of this week: weekday letter, the real date and that day's real state. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+/** Full month: all dates, the real state of each, previous / next month. Done = a coloured dot per person; missed = red tint; scheduled = outline; unscheduled = dim. */
 @Composable
-private fun WeekStrip(week: List<HabitRules.Occurrence>, today: LocalDate) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        week.forEach { o ->
-            val future = o.day > today
-            val (bg, fg) = when {
-                o.state == DayState.DONE -> Od.ok.copy(alpha = 0.22f) to Od.ok
-                o.state == DayState.MISSED && !future -> Od.danger.copy(alpha = 0.18f) to Od.danger
-                else -> Od.elevated to Od.fg
-            }
-            val shape = RoundedCornerShape(10.dp)
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(o.day.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, java.util.Locale.getDefault()), style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp), color = Od.muted)
-                Box(
-                    Modifier.fillMaxWidth().height(44.dp).background(bg, shape).then(if (o.day == today) Modifier.border(1.5.dp, Od.accent, shape) else Modifier).alpha(if (o.state == DayState.OFF || future) 0.55f else 1f)
-                        .semantics { contentDescription = "${o.day.dayOfMonth}: ${when (o.state) { DayState.DONE -> "done"; DayState.MISSED -> if (future) "scheduled" else "missed"; DayState.PENDING -> "scheduled"; DayState.OFF -> "not scheduled" }}" },
-                    contentAlignment = Alignment.Center,
-                ) { Text(o.day.dayOfMonth.toString(), style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp, fontWeight = if (o.state == DayState.DONE) FontWeight.Bold else FontWeight.Normal), color = fg, maxLines = 1) }
-            }
-        }
-    }
-}
-
-@Composable
-private fun HabitHistory(h: Habit, user: String, ui: AppUi, logs: Map<String, Map<LocalDate, HabitLog>>, canEditDay: Boolean, onSetDay: (LocalDate, LogStatus?) -> Unit) {
-    val history = HabitRules.history(h, user, ui.today, logs, 60)
-    val rate = HabitRules.completionRate(h, user, ui.today, logs)
-    val best = HabitRules.longestStreak(h, user, ui.today, logs)
+private fun HabitMonthCalendar(h: Habit, participants: List<String>, ui: AppUi, logs: Map<String, Map<LocalDate, HabitLog>>, name: (String) -> String, me: String) {
+    var month by rememberSaveable(h.id) { mutableStateOf(java.time.YearMonth.from(ui.today).toString()) }
+    val ym = java.time.YearMonth.parse(month)
+    val lead = ym.atDay(1).dayOfWeek.value - 1
+    val cells: List<LocalDate?> = List(lead) { null } + (1..ym.lengthOfMonth()).map { ym.atDay(it) }
+    val shape = RoundedCornerShape(10.dp)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Best streak $best${if (rate != null) " · last 30 days $rate%" else ""}", style = MaterialTheme.typography.bodyMedium, color = Od.muted)
-        history.take(30).chunked(10).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                row.forEach { o ->
-                    val c = when (o.state) { DayState.DONE -> Od.ok; DayState.MISSED -> Od.danger; else -> Od.line(0.2f) }
-                    Box(Modifier.size(22.dp).background(c.copy(alpha = if (o.state == DayState.PENDING) 0.5f else 0.9f), CircleShape))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton({ month = ym.minusMonths(1).toString() }, Modifier.size(44.dp)) { Icon(Icons.Rounded.ChevronLeft, "Previous month", tint = Od.fg) }
+            Text("${ym.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault())} ${ym.year}", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, fontWeight = FontWeight.SemiBold), color = Od.fg, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            IconButton({ month = ym.plusMonths(1).toString() }, Modifier.size(44.dp)) { Icon(Icons.Rounded.ChevronRight, "Next month", tint = Od.fg) }
+        }
+        Row(Modifier.fillMaxWidth()) {
+            listOf("M", "T", "W", "T", "F", "S", "S").forEach { Text(it, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = Od.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
+        }
+        (cells + List((7 - cells.size % 7) % 7) { null }).chunked(7).forEach { week ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                week.forEach { day ->
+                    if (day == null) { Spacer(Modifier.weight(1f).height(44.dp)); return@forEach }
+                    val states = participants.associateWith { HabitRules.dayState(h, it, day, ui.today, logs) }
+                    val scheduled = states.values.any { it != DayState.OFF }
+                    val missed = day <= ui.today && states.values.any { it == DayState.MISSED }
+                    val doneBy = participants.filter { states[it] == DayState.DONE }
+                    val desc = "${day.dayOfMonth}: " + when {
+                        doneBy.isNotEmpty() -> "done by ${doneBy.joinToString { name(it) }}"; missed -> "missed"; scheduled -> "scheduled"; else -> "not scheduled"
+                    }
+                    Box(
+                        Modifier.weight(1f).height(44.dp).background(if (missed && doneBy.isEmpty()) Od.danger.copy(alpha = 0.16f) else Color.Transparent, shape)
+                            .border(if (day == ui.today) 1.5.dp else 1.dp, if (day == ui.today) Od.accent else if (scheduled && doneBy.isEmpty() && !missed) Od.line(0.22f) else Color.Transparent, shape)
+                            .semantics { contentDescription = desc },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(day.dayOfMonth.toString(), style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp, fontWeight = if (doneBy.isNotEmpty()) FontWeight.Bold else FontWeight.Normal), color = if (scheduled) Od.fg else Od.muted.copy(alpha = 0.5f))
+                            Row(Modifier.height(8.dp), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+                                doneBy.forEach { Box(Modifier.size(7.dp).background(markerColor(it, me), CircleShape)) }
+                            }
+                        }
+                    }
                 }
             }
         }
-        Text("Newest first. Green done, red missed. Days the habit isn’t scheduled are not shown.", style = MaterialTheme.typography.bodySmall, color = Od.muted)
-        if (canEditDay) {
-            val y = ui.today.minusDays(1)
-            if (HabitRules.dayState(h, user, y, ui.today, logs) == DayState.MISSED) OdButton("I did it yesterday", { onSetDay(y, LogStatus.DONE) }, style = OdButtonStyle.Soft)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            participants.forEach { uid -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) { Box(Modifier.size(9.dp).background(markerColor(uid, me), CircleShape)); Text("${name(uid)} done", style = MaterialTheme.typography.bodySmall, color = Od.muted) } }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) { Box(Modifier.size(9.dp).background(Od.danger.copy(alpha = 0.5f), CircleShape)); Text("Missed", style = MaterialTheme.typography.bodySmall, color = Od.muted) }
         }
     }
 }

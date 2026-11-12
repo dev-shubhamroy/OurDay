@@ -26,6 +26,8 @@ final class DashboardWindowController: NSObject, NSWindowDelegate {
                              styleMask: [.titled, .closable, .miniaturizable, .resizable],
                              backing: .buffered, defer: false)
             w.title = "OurDay"
+            w.appearance = NSAppearance(named: .darkAqua)   // title bar matches the dark OurDay palette while the page loads
+            w.backgroundColor = NSColor(srgbRed: 17 / 255, green: 17 / 255, blue: 20 / 255, alpha: 1)
             w.isReleasedWhenClosed = false
             w.contentView = wv
             w.setFrameAutosaveName("OurDayDashboard")

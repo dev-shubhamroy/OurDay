@@ -46,8 +46,8 @@ fun DeadlinesScreen(ui: AppUi, onOpen: (Task) -> Unit, onToggle: (Task) -> Unit,
     fun owner(t: Task): Pair<String, Boolean>? = if (ui.isPartnerView || t.createdBy == d.meId) null else ws?.nameOf(t.createdBy)?.let { it to true }
 
     PullToRefreshBox(isRefreshing = ui.status is SyncStatus.Syncing, onRefresh = onRefresh) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-            item { PageHeading("Time-sensitive", "Deadlines", trailing = { AddButton("Add a deadline", onAdd) }) }
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 150.dp)) {
+            item { PageHeading("Time-sensitive", "Deadlines") }
             item { SyncStrip(ui) }
             if (ui.isPartnerView) item { PartnerBanner(ws?.partner?.firstName ?: "your partner") }
             if (today.isEmpty() && future.isEmpty()) item { Spacer(Modifier.height(16.dp)); DashedEmpty("No active deadlines") }

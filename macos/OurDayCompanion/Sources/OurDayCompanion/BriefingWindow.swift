@@ -58,7 +58,7 @@ final class BriefingWindowController: NSObject, NSWindowDelegate {
             w.title = "RANA Briefing"
             w.titlebarAppearsTransparent = true
             w.appearance = NSAppearance(named: .darkAqua)
-            w.backgroundColor = NSColor(srgbRed: 17 / 255, green: 17 / 255, blue: 19 / 255, alpha: 1)
+            w.backgroundColor = NSColor(srgbRed: 17 / 255, green: 17 / 255, blue: 20 / 255, alpha: 1)
             w.titleVisibility = .hidden
             w.isMovableByWindowBackground = true
             w.minSize = NSSize(width: 760, height: 560)

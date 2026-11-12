@@ -57,6 +57,7 @@ class RootViewModel @Inject constructor(val auth: AuthRepository, private val ap
     /** Called once a person is signed in: start syncing, schedule the 9:30 PM check-in, register this device for push. */
     fun onSignedIn() {
         scheduler.syncSoon(); scheduler.schedulePeriodic(); CheckInScheduler.schedule(ctx)
+        viewModelScope.launch { com.ourday.app.notifications.FloatingRanaScheduler.apply(ctx, appPrefs.floatingRanaOn.first()) }
         // FCM counts as active only if the token really reached the server (the device_tokens table exists); then the 15-minute checker steps aside.
         viewModelScope.launch { appPrefs.setFcmActive(tokens.registerCurrent(ctx)) }
     }
@@ -168,6 +169,7 @@ class SettingsViewModel @Inject constructor(
     val use24h = prefs.use24h.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val localCheckIn = prefs.localCheckIn.stateIn(viewModelScope, SharingStarted.Eagerly, true)
     val nativeAlerts = prefs.nativeAlertsOn.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val floatingRana = prefs.floatingRanaOn.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val route = prefs.deliveryRoute.stateIn(viewModelScope, SharingStarted.Eagerly, "FCM")
     val server = MutableStateFlow<PrefsDto?>(null)
     val serverError = MutableStateFlow<String?>(null)
@@ -183,6 +185,7 @@ class SettingsViewModel @Inject constructor(
     fun setTheme(m: ThemeMode) = viewModelScope.launch { prefs.setTheme(m) }
     fun setUse24h(v: Boolean) = viewModelScope.launch { prefs.setUse24h(v) }
     fun setNativeAlerts(v: Boolean) = viewModelScope.launch { prefs.setNativeAlerts(v) }
+    fun setFloatingRana(v: Boolean) = viewModelScope.launch { prefs.setFloatingRana(v); com.ourday.app.notifications.FloatingRanaScheduler.apply(ctx, v) }
     fun setLocalCheckIn(v: Boolean) = viewModelScope.launch {
         prefs.setLocalCheckIn(v)
         if (v) CheckInScheduler.schedule(ctx) else CheckInScheduler.cancel(ctx)
@@ -197,7 +200,7 @@ class SettingsViewModel @Inject constructor(
             .onFailure { SnackbarController.show("Couldn’t save that. Check your connection."); load() }
     }
 
-    fun signOut() = viewModelScope.launch { runCatching { tokens.remove(ctx) }; CheckInScheduler.cancel(ctx); auth.signOut() }
+    fun signOut() = viewModelScope.launch { runCatching { tokens.remove(ctx) }; CheckInScheduler.cancel(ctx); com.ourday.app.notifications.FloatingRanaScheduler.apply(ctx, false); auth.signOut() }
     suspend fun pendingChanges() = auth.pendingChanges()
     fun syncNow() = viewModelScope.launch { repo.refresh() }
 }

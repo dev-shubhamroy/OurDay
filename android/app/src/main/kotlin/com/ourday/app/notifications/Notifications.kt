@@ -50,7 +50,7 @@ object Notifier {
     fun show(context: Context, id: Int, category: Category, title: String, body: String, destination: Destination, actions: List<NotificationCompat.Action> = emptyList(), group: String? = null) {
         if (!canPost(context)) return
         val b = NotificationCompat.Builder(context, category.channelId)
-            .setSmallIcon(R.drawable.ic_notification).setContentTitle(title).setContentText(body).setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setSmallIcon(R.drawable.ic_stat_ourday).setContentTitle(title).setContentText(body).setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setContentIntent(tapIntent(context, destination, id)).setAutoCancel(true)
             .setPriority(if (category == Category.URGENT_DEADLINE || category == Category.HABIT) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
         if (category == Category.URGENT_DEADLINE) b.setCategory(NotificationCompat.CATEGORY_REMINDER)

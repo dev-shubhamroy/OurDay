@@ -48,7 +48,7 @@ fun HomeScreen(
     val night = hour < 5 || hour >= 18
 
     PullToRefreshBox(isRefreshing = ui.status is SyncStatus.Syncing, onRefresh = onRefresh) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 150.dp)) {
             item {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     val big = MaterialTheme.typography.displaySmall.copy(fontSize = 36.sp, lineHeight = 42.sp, fontWeight = FontWeight.Bold)
@@ -93,7 +93,6 @@ fun HomeScreen(
             item {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 28.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Tasks", Modifier.weight(1f).clickable(onClick = onTasks).heightIn(min = 44.dp).wrapContentHeight(Alignment.CenterVertically), style = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold), color = Od.fg)
-                    AddAction(onAddTask)
                 }
                 if (daily.isEmpty()) DashedEmpty("Nothing planned for today")
                 else HomeCard {
@@ -102,17 +101,16 @@ fun HomeScreen(
             }
 
             // ---- Shared with partner ----------------------------------------------------------------------------------------
-            if (partner != null || shared.isNotEmpty()) item {
+            if (shared.isNotEmpty()) item {
                 Row(Modifier.fillMaxWidth().clickable(onClick = onShared).padding(horizontal = 20.dp).padding(top = 28.dp, bottom = 10.dp).heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     Icon(Icons.Rounded.Group, null, Modifier.size(26.dp), tint = Od.muted)
                     Text(if (partner != null) "Shared with ${partner.firstName}" else "Shared", style = MaterialTheme.typography.titleLarge.copy(fontSize = 21.sp, fontWeight = FontWeight.Bold), color = Od.fg, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Icon(Icons.Rounded.ChevronRight, "Open shared tasks", Modifier.size(26.dp), tint = Od.fg)
                 }
-                if (shared.isEmpty()) DashedEmpty("Nothing shared yet")
-                else HomeCard { shared.forEach { t -> SharedLine(t, ui, onClick = onShared) } }
+                HomeCard { shared.forEach { t -> SharedLine(t, ui, onClick = onShared) } }
             }
 
-            item { Spacer(Modifier.height(8.dp)); RanaEntry(onRana) }
+            item { Spacer(Modifier.height(8.dp)) }
         }
     }
 }
@@ -131,7 +129,7 @@ private fun DeadlineLine(t: Task, ui: AppUi, onToggle: () -> Unit, onClick: () -
     val hot = u == Urgency.CRITICAL || u == Urgency.APPROACHING || u == Urgency.OVERDUE || dueToday
     Row(Modifier.fillMaxWidth().then(if (hot) Modifier.leftEdge(Od.accent) else Modifier).clickable(onClick = onClick).padding(start = 12.dp, end = 16.dp).heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
         CheckButton(!t.isOpen, onToggle, if (t.isOpen) "Mark complete: ${t.title}" else "Mark incomplete: ${t.title}", size = 26.dp)
-        Text(t.title, Modifier.weight(1f).padding(horizontal = 6.dp), style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp), color = if (t.isOpen) Od.fg else Od.muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        Text(t.title, Modifier.weight(1f).padding(horizontal = 6.dp), style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp), color = if (t.isOpen) Od.fg else Od.muted,
             textDecoration = if (t.isOpen) null else TextDecoration.LineThrough)
         if (due != null) Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Schedule, null, Modifier.size(16.dp), tint = if (hot) Od.accent else Od.muted)
@@ -144,7 +142,7 @@ private fun DeadlineLine(t: Task, ui: AppUi, onToggle: () -> Unit, onClick: () -
 private fun TaskLine(t: Task, ui: AppUi, onToggle: () -> Unit, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 8.dp, end = 16.dp).heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
         SquareCheck(!t.isOpen, onToggle, if (t.isOpen) "Mark complete: ${t.title}" else "Mark incomplete: ${t.title}")
-        Text(t.title, Modifier.weight(1f).padding(horizontal = 4.dp), style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp), color = if (t.isOpen) Od.fg else Od.muted, maxLines = 2, overflow = TextOverflow.Ellipsis,
+        Text(t.title, Modifier.weight(1f).padding(horizontal = 4.dp), style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp), color = if (t.isOpen) Od.fg else Od.muted,
             textDecoration = if (t.isOpen) null else TextDecoration.LineThrough)
         SyncBadge(t.syncState)
         t.plannedTime?.let { Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -162,7 +160,7 @@ private fun SharedLine(t: Task, ui: AppUi, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 8.dp, end = 16.dp).heightIn(min = 60.dp), verticalAlignment = Alignment.CenterVertically) {
         SquareCheck(state == SharedState.COMPLETED, null, "${t.title}: ${when (state) { SharedState.COMPLETED -> "completed"; SharedState.AWAITING_APPROVAL -> "awaiting approval"; else -> "active" }}")
         Column(Modifier.weight(1f).padding(horizontal = 4.dp, vertical = 6.dp)) {
-            Text(t.title, style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp), color = if (state == SharedState.COMPLETED) Od.muted else Od.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            Text(t.title, style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp), color = if (state == SharedState.COMPLETED) Od.muted else Od.fg,
                 textDecoration = if (state == SharedState.COMPLETED) TextDecoration.LineThrough else null)
             if (state == SharedState.AWAITING_APPROVAL) Text("Awaiting approval", style = MaterialTheme.typography.bodySmall, color = Od.warn)
         }

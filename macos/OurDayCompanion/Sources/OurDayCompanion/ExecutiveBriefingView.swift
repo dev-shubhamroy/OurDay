@@ -8,9 +8,11 @@ import SwiftUI
 
 enum Fusion {
     static func hex(_ v: UInt32) -> Color { Color(.sRGB, red: Double((v >> 16) & 255) / 255, green: Double((v >> 8) & 255) / 255, blue: Double(v & 255) / 255, opacity: 1) }
-    static let bg = hex(0x111113), surface = hex(0x17171A), chip = hex(0x202024), border = hex(0x2A2A30), pill = hex(0x1B1B1F)
-    static let text = hex(0xF3F3F5), textSecondary = hex(0xC7C7CF), muted = hex(0xA4A4AD)
-    static let accent = hex(0xFF6A6F), kicker = hex(0xFF7B7F), button = hex(0xD23B41)
+    // Same values as the Android app's dark tokens (Od.*) so both apps read as one product.
+    static let bg = hex(0x111114), surface = hex(0x1A1A20), chip = hex(0x22222A), border = hex(0x2C2C34), pill = hex(0x1A1A20)
+    static let text = hex(0xF4F2F5), textSecondary = hex(0xCFCDD5), muted = hex(0x9996A1)
+    static let accent = hex(0xFF6B6B), kicker = hex(0xFF6B6B), button = hex(0xF26262)
+    static let radius: CGFloat = 20   // card corner radius (Android OdShapes.card)
     // colour coding: band bg, band text, ring stroke, tag bg, tag text
     static let urgentBand = hex(0x2A1618), urgentText = hex(0xFFB3B6), urgentRing = hex(0xE5484D), urgentTagBg = hex(0x3A1A1C), urgentTag = hex(0xFF9A9D)
     static let todayBand = hex(0x142133), todayText = hex(0xB5D0FF), todayRing = hex(0x4C8DF6), todayTagBg = hex(0x1B2A44), todayTag = hex(0x9CC3FF)
@@ -48,6 +50,21 @@ private struct Entrance: ViewModifier {
 }
 extension View { fileprivate func entrance(_ r: Reveal, _ i: Int) -> some View { modifier(Entrance(reveal: r, index: i)) } }
 
+/// RANA's official avatar: the supplied bull image, undistorted, on a dark disc with a coral ring (same as Android).
+struct RanaAvatar: View {
+    var size: CGFloat = 52
+    var body: some View {
+        Group {
+            if let u = Bundle.main.url(forResource: "rana_bull", withExtension: "png"), let img = NSImage(contentsOf: u) {
+                Image(nsImage: img).resizable().aspectRatio(contentMode: .fit).padding(size * 0.08)
+            } else { Image(systemName: "sparkles").foregroundColor(Fusion.accent) }
+        }
+        .frame(width: size, height: size).background(Circle().fill(Fusion.surface))
+        .overlay(Circle().stroke(Fusion.accent.opacity(0.55), lineWidth: 1)).clipShape(Circle())
+        .accessibilityLabel("RANA")
+    }
+}
+
 private struct Ring: View {
     let color: Color
     var body: some View { Circle().stroke(color, lineWidth: 1.8).frame(width: 18, height: 18) }
@@ -75,8 +92,8 @@ struct BandCard<Body: View>: View {
             VStack(alignment: .leading, spacing: 8) { content }.padding(.horizontal, 18).padding(.vertical, 14).frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Fusion.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Fusion.border, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: Fusion.radius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Fusion.radius, style: .continuous).stroke(Fusion.border, lineWidth: 1))
     }
 }
 
@@ -137,8 +154,8 @@ struct SideCard<Body: View>: View {
         }
         .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
         .background(Fusion.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Fusion.border, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: Fusion.radius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Fusion.radius, style: .continuous).stroke(Fusion.border, lineWidth: 1))
     }
 }
 
@@ -163,7 +180,10 @@ struct ReportView: View {
             if let q = r.quote {      // plain text on the background: kicker, quote, author
                 VStack(alignment: .leading, spacing: 8) {
                     Text("JUST KNOW THAT –").font(Fusion.body(12, 600)).tracking(1.9).foregroundColor(Fusion.kicker)
-                    Text("“\(q.text)”").font(Fusion.display(31, 500)).tracking(-0.3).lineSpacing(3).foregroundColor(Fusion.text).fixedSize(horizontal: false, vertical: true)
+                    HStack(alignment: .top, spacing: 12) {
+                        Text("“").font(.system(size: 56, weight: .bold, design: .serif)).foregroundColor(Fusion.accent).offset(y: -8)
+                        Text(q.text).font(.system(size: 30, weight: .regular, design: .serif)).lineSpacing(4).foregroundColor(Fusion.text).fixedSize(horizontal: false, vertical: true)
+                    }
                     if let author = q.author { Text("— \(author)").font(Fusion.body(14)).foregroundColor(Fusion.muted) }
                 }.accessibilityElement(children: .combine).entrance(reveal, 1)
             }
@@ -232,10 +252,13 @@ struct BriefingRoot: View {
     var top: some View {
         HStack(alignment: .top) {
             if let r = model.briefing?.report {
-                (Text(r.greetingLead + " ").foregroundColor(Fusion.text) + Text(r.greetingName).foregroundColor(Fusion.accent))
-                    .font(Fusion.display(50, 800)).tracking(-1.75).lineLimit(2).minimumScaleFactor(0.6).fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(r.greetingLead).font(.system(size: 40, weight: .regular, design: .serif).italic()).foregroundColor(Fusion.text)
+                    Text(r.greetingName).font(Fusion.display(54, 800)).tracking(-1.75).foregroundColor(Fusion.accent).lineLimit(2).minimumScaleFactor(0.6)
+                }.fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 16)
+            RanaAvatar(size: 56).padding(.trailing, 6)
             HStack(spacing: 8) {
                 Image(systemName: "calendar").font(.system(size: 13))
                 Text(model.briefing?.report.dateLine ?? ExecutiveReportBuilder.dateLine(Date(), .autoupdatingCurrent)).font(Fusion.body(14))

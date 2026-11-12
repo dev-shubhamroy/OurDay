@@ -44,8 +44,8 @@ fun TodayScreen(
     fun owner(t: Task): Pair<String, Boolean>? = if (ui.isPartnerView || t.createdBy == d.meId) null else ws?.nameOf(t.createdBy)?.let { it to true }
 
     PullToRefreshBox(isRefreshing = ui.status is SyncStatus.Syncing, onRefresh = onRefresh) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-            item { PageHeading(Fmt.longDate(ui.today), "Today", trailing = { AddButton("Add a task", onAddTask) }) }
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 150.dp)) {
+            item { PageHeading(Fmt.longDate(ui.today), "Today") }
             item { SyncStrip(ui) }
             if (ui.isPartnerView) item { PartnerBanner(ws?.partner?.firstName ?: "your partner") }
             if (ws == null) {
@@ -56,7 +56,7 @@ fun TodayScreen(
             if (deadlines.isEmpty()) item { DashedEmpty("No active deadlines today") }
             items(deadlines.size, key = { "d" + deadlines[it].id }) { i -> val t = deadlines[i]; DeadlineRow(t, ui.now, ui.today, ui.zone, owner(t), ui.h24, { onToggle(t) }, { onOpenTask(t) }, edge = true) }
 
-            item { SectionHead(Icons.Rounded.Checklist, "Daily tasks", trailing = { AddAction(onAddTask) }) }
+            item { SectionHead(Icons.Rounded.Checklist, "Daily tasks") }
             if (daily.isEmpty()) item { DashedEmpty("Nothing planned for today") }
             items(daily.size, key = { "p" + daily[it].id }) { i -> val t = daily[i]; TaskCard(t, owner(t), ui.h24, { onToggle(t) }, { onOpenTask(t) }) }
 

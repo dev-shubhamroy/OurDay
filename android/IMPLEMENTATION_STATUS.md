@@ -52,3 +52,12 @@ None for the app to work with tasks, habits, RANA, shared tasks and quotes. Only
 - One shared header (`AppHeader`): wordmark, notification bell (opens Settings; Android has no notification-centre screen) and the Partner Mode switch.
 - New: `HomeScreen`, `DeadlinesScreen` (Past container last, real count), restyled Today and Habits (summary, segmented filter, stats panel, Monday-Sunday week strip).
 - New domain selectors with tests: `TaskRules.upcomingDeadlines/futureDeadlines`, `HabitRules.summary/week`.
+
+## UI and feature sprint (global Add, notification centre, Inspiration, RANA, icons)
+- Outlined five-tab bar (`OurDayNavBar`), stacked floating RANA (bull) and global Add buttons with the Add sheet (Task / Deadline / Habit); per-page Add buttons removed.
+- Notification Centre (`NotificationsViewModel`, reads the server's `notifications` rows, `read_at` is the only column changed) with an unread dot on the bell and tap-to-navigate.
+- Inspiration Library (add / edit / delete / multi-select) writes the existing `inspiration_quotes` table directly (online only) and re-syncs so RANA sees the change.
+- RANA briefing redesigned (serif greeting and quote, live deadline card, plan timeline); official bull avatar in `res/drawable-nodpi/rana_bull.webp`; official launcher icon pack and status-bar icon.
+- Habit cards: current streaks only (fire emoji) and one full-month calendar (shared habits: one calendar, a marker colour per person).
+- Floating RANA overlay every 3 h (`FloatingRana.kt`): opt-in, needs "Display over other apps" (`SYSTEM_ALERT_WINDOW`), WorkManager periodic job (unique, 3 h, 30 min flex), skipped when the screen is off or locked, auto-hides after 3 min, never a burst after downtime. Android/OriginOS may delay it; exact timing is not guaranteed.
+- Verified on the emulator only (all screens, overlay over the launcher). **Not verified on a physical phone.**

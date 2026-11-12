@@ -35,6 +35,7 @@ class AppPrefs @Inject constructor(@ApplicationContext private val context: Cont
     private val notifSince = longPreferencesKey("notif_since_ms")
     private val notifShown = stringPreferencesKey("notif_shown_ids")
     private val nativeAlerts = booleanPreferencesKey("native_alerts")
+    private val floatingRana = booleanPreferencesKey("floating_rana")
     private val fcmRegistered = booleanPreferencesKey("fcm_registered")
 
     val themeMode: Flow<ThemeMode> = context.store.data.map { runCatching { ThemeMode.valueOf(it[theme] ?: "SYSTEM") }.getOrDefault(ThemeMode.SYSTEM) }
@@ -50,6 +51,9 @@ class AppPrefs @Inject constructor(@ApplicationContext private val context: Cont
 
     suspend fun setViewMode(wire: String) = context.store.edit { it[viewMode] = wire }
     suspend fun setNativeAlerts(v: Boolean) = context.store.edit { it[nativeAlerts] = v }
+    /** The floating RANA briefing (every three hours) is opt-in: it needs the "display over other apps" permission. */
+    val floatingRanaOn: Flow<Boolean> = context.store.data.map { it[floatingRana] ?: false }
+    suspend fun setFloatingRana(v: Boolean) = context.store.edit { it[floatingRana] = v }
     suspend fun setFcmActive(v: Boolean) = context.store.edit { it[fcmRegistered] = v }
     suspend fun notifSince(): Long = context.store.data.map { it[notifSince] ?: 0L }.first()
     suspend fun setNotifSince(ms: Long) = context.store.edit { it[notifSince] = ms }

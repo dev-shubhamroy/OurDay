@@ -213,7 +213,7 @@ fun DeadlineCard(
             Row(Modifier.fillMaxWidth().deadlineEdge(aura).padding(start = 10.dp, end = 12.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 CheckButton(!task.isOpen, onToggle, if (task.isOpen) "Mark complete: ${task.title}" else "Mark incomplete: ${task.title}")
                 Column(Modifier.weight(1f).padding(start = 2.dp, end = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(task.title, style = MaterialTheme.typography.titleMedium, color = if (task.isOpen) Od.fg else Od.muted, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    Text(task.title, style = MaterialTheme.typography.titleMedium, color = if (task.isOpen) Od.fg else Od.muted,
                         textDecoration = if (task.isOpen) null else TextDecoration.LineThrough)
                     MetaLine(task, today, zone, h24, now, u, subdued)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -237,7 +237,7 @@ fun TaskCard(task: Task, owner: Pair<String, Boolean>?, h24: Boolean, onToggle: 
             Row(Modifier.fillMaxWidth().padding(start = 6.dp, end = 12.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (onToggle != null) CheckButton(!task.isOpen, onToggle, if (task.isOpen) "Mark complete: ${task.title}" else "Mark incomplete: ${task.title}") else Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f).padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(task.title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = if (task.isOpen) Od.fg else Od.muted, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    Text(task.title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = if (task.isOpen) Od.fg else Od.muted,
                         textDecoration = if (task.isOpen) null else TextDecoration.LineThrough)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         val meta = when { task.plannedTime != null -> "Planned ${Fmt.clock(task.plannedTime!!, h24)}"; task.plannedTime == null && task.kind == TaskKind.DAILY -> "Anytime"; else -> null }

@@ -51,14 +51,16 @@ import java.time.ZoneId
 
 /** The one shared header: OurDay wordmark on the left; notification bell and the Partner Mode switch in the upper-right corner. */
 @Composable
-fun AppHeader(ui: AppUi, onMode: (ViewMode) -> Unit, onBell: () -> Unit, divider: Boolean = true) {
+fun AppHeader(ui: AppUi, onMode: (ViewMode) -> Unit, onBell: () -> Unit, divider: Boolean = true, unread: Boolean = false) {
     Column(Modifier.fillMaxWidth().background(Od.bg)) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().height(64.dp).padding(start = 20.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 buildAnnotatedString { withStyle(SpanStyle(color = Od.fg)) { append("Our") }; withStyle(SpanStyle(color = Od.accent)) { append("Day") } },
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, fontSize = 28.sp, letterSpacing = (-0.5).sp), modifier = Modifier.weight(1f), maxLines = 1,
             )
-            IconButton(onClick = onBell, Modifier.size(48.dp)) { Icon(Icons.Outlined.NotificationsNone, "Notifications", Modifier.size(26.dp), tint = Od.fg) }
+            IconButton(onClick = onBell, Modifier.size(48.dp).semantics { contentDescription = if (unread) "Notifications, unread" else "Notifications" }) {
+                Box { Icon(Icons.Outlined.NotificationsNone, null, Modifier.size(26.dp), tint = Od.fg); if (unread) Box(Modifier.align(Alignment.TopEnd).size(10.dp).background(Od.accent, CircleShape).border(1.5.dp, Od.bg, CircleShape)) }
+            }
             Spacer(Modifier.width(4.dp))
             PartnerSwitch(ui, onMode)
         }
@@ -154,7 +156,7 @@ fun DeadlineRow(task: Task, now: Instant, today: LocalDate, zone: ZoneId, owner:
             Row(Modifier.fillMaxWidth().then(if (edge && task.isOpen) Modifier.leftEdge(tone) else Modifier).padding(start = 10.dp, end = 12.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 CheckButton(!task.isOpen, onToggle, if (task.isOpen) "Mark complete: ${task.title}" else "Mark incomplete: ${task.title}", size = 30.dp)
                 Column(Modifier.weight(1f).padding(horizontal = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(task.title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, fontWeight = FontWeight.SemiBold), color = if (task.isOpen) Od.fg else Od.muted, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    Text(task.title, style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, fontWeight = FontWeight.SemiBold), color = if (task.isOpen) Od.fg else Od.muted,
                         textDecoration = if (task.isOpen) null else TextDecoration.LineThrough)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                         if (due != null) {
