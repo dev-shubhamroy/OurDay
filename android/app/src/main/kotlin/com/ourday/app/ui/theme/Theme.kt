@@ -41,9 +41,9 @@ class OdColors(
 }
 
 private val DarkTokens = OdColors(
-    dark = true, bg = Color(0xFF111113), surface = Color(0xFF17171A), elevated = Color(0xFF202024), accent = Color(0xFFFF6A6F), button = Color(0xFFD23B41),
-    accent2 = Color(0xFFC9B8FF), electric = Color(0xFF4C8DF6), glow = Color(0xFFFFB3B6), fg = Color(0xFFF3F3F5), muted = Color(0xFFA4A4AD), line = Color.White,
-    ok = Color(0xFF7BDDB6), warn = Color(0xFFFFB547), danger = Color(0xFFE5484D), partner = Color(0xFFC9B8FF), onFill = Color(0xFF111113),
+    dark = true, bg = Color(0xFF111114), surface = Color(0xFF1A1A20), elevated = Color(0xFF25252C), accent = Color(0xFFFF6B6B), button = Color(0xFFFF6B6B),
+    accent2 = Color(0xFFF15A67), electric = Color(0xFF4C8DF6), glow = Color(0xFFFFB3B6), fg = Color(0xFFF4F2F5), muted = Color(0xFF9996A1), line = Color.White,
+    ok = Color(0xFF7BDDB6), warn = Color(0xFFFFB547), danger = Color(0xFFE5484D), partner = Color(0xFFC9B8FF), onFill = Color(0xFF111114),
 )
 private val LightTokens = OdColors(
     dark = false, bg = Color(0xFFF7F7F8), surface = Color.White, elevated = Color(0xFFF0F0F3), accent = Color(0xFFD6454C), button = Color(0xFFD23B41),

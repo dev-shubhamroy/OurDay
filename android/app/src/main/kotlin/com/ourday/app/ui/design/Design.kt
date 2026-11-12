@@ -126,10 +126,10 @@ fun Pill(text: String, color: Color, icon: ImageVector? = null, fillAlpha: Float
 }
 
 @Composable
-fun Avatar(initials: String, partner: Boolean, size: Dp = 20.dp, modifier: Modifier = Modifier) {
-    val c = if (partner) Od.accent2 else Od.accent
-    Box(modifier.size(size).background(c.copy(alpha = 0.20f), CircleShape), contentAlignment = Alignment.Center) {
-        Text(initials, color = c, style = MaterialTheme.typography.labelSmall.copy(fontSize = (size.value * 0.42f).sp, letterSpacing = 0.sp))
+fun Avatar(initials: String, partner: Boolean, size: Dp = 20.dp, modifier: Modifier = Modifier, solid: Boolean = false) {
+    val c = if (partner) Od.partner else Od.accent
+    Box(modifier.size(size).background(if (solid) c else c.copy(alpha = 0.20f), CircleShape), contentAlignment = Alignment.Center) {
+        Text(initials, color = if (solid) Color(0xFF111114) else c, style = MaterialTheme.typography.labelSmall.copy(fontSize = (size.value * 0.42f).sp, letterSpacing = 0.sp))
     }
 }
 

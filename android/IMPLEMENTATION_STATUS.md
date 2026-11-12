@@ -46,3 +46,9 @@ None for the app to work with tasks, habits, RANA, shared tasks and quotes. Only
 
 **Still unverified (needs your phone):** every screen's appearance and spacing against the web, gestures and animations, the widget on a real launcher and its tap/complete actions, a notification actually appearing (15-minute check, and later FCM), Partner Mode against real data, the release build.
 **Known limits:** the 15-minute check cannot deliver a 5-minute deadline reminder on time (Android's WorkManager minimum), only FCM can; the Habits "Mine/Partner's/Shared" pills look at the whole workspace while "All" follows the mode; the widget shows your own tasks regardless of Partner Mode; no habit "category" exists in the OurDay schema, so none is offered.
+
+## Reference-driven redesign (Home, Today, Deadlines, Habits)
+- Bottom navigation is now Home / Today / Deadlines / Habits / More; Tasks and Shared are full-screen routes opened from Home (Tasks heading, "Shared with …").
+- One shared header (`AppHeader`): wordmark, notification bell (opens Settings; Android has no notification-centre screen) and the Partner Mode switch.
+- New: `HomeScreen`, `DeadlinesScreen` (Past container last, real count), restyled Today and Habits (summary, segmented filter, stats panel, Monday-Sunday week strip).
+- New domain selectors with tests: `TaskRules.upcomingDeadlines/futureDeadlines`, `HabitRules.summary/week`.

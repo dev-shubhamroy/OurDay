@@ -39,6 +39,14 @@ object TaskRules {
             }
         }.sortedWith(compareBy({ if (it.kind == TaskKind.DEADLINE) deadlineDay(it, zone) else it.date }, { it.dueAt ?: Instant.MAX }, { it.id })).take(limit)
 
+    /** Home: the next open deadlines (not yet expired), soonest first, at most [limit] (three on the Home screen). */
+    fun upcomingDeadlines(tasks: List<Task>, now: Instant, limit: Int = 3): List<Task> =
+        tasks.filter { it.kind == TaskKind.DEADLINE && it.isOpen && !isExpired(it, now) }.sortedWith(byDue).take(limit)
+
+    /** Deadlines screen "Future deadlines": open, not expired, due after today. */
+    fun futureDeadlines(tasks: List<Task>, today: LocalDate, now: Instant, zone: ZoneId): List<Task> =
+        tasks.filter { it.kind == TaskKind.DEADLINE && it.isOpen && !isExpired(it, now) && deadlineDay(it, zone) > today }.sortedWith(byDue)
+
     /** Open deadlines that passed (the "missed" list) and open daily tasks from earlier days. */
     fun overdue(tasks: List<Task>, today: LocalDate, now: Instant): List<Task> =
         tasks.filter { isExpired(it, now) || (it.kind == TaskKind.DAILY && it.isOpen && it.date < today) }

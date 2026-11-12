@@ -200,3 +200,53 @@ class CheckInTest {
         assertFalse(CheckIn.isDue(ZonedDateTime.of(2026, 11, 8, 21, 29, 0, 0, IST))); assertTrue(CheckIn.isDue(ZonedDateTime.of(2026, 11, 8, 21, 30, 0, 0, IST)))
     }
 }
+
+class RedesignSelectorsTest {
+    private val memberIds = listOf(ME, PARTNER)
+    private val day1 = TODAY.plusDays(1)
+
+    @Test fun homeShowsAtMostThreeUpcomingDeadlinesSoonestFirst() {
+        val t = listOf(
+            deadline("d4", "four", at(TODAY.plusDays(5), 9)), deadline("d1", "one", at(TODAY, 19)), deadline("d3", "three", at(TODAY.plusDays(2), 9)), deadline("d2", "two", at(day1, 23, 59)),
+        )
+        assertEquals(listOf("d1", "d2", "d3"), TaskRules.upcomingDeadlines(t, NOW).map { it.id })
+    }
+    @Test fun homeShowsFewerWhenFewerExistAndNoneWhenEmpty() {
+        assertEquals(listOf("a"), TaskRules.upcomingDeadlines(listOf(deadline("a", "a", at(day1, 9))), NOW).map { it.id })
+        assertEquals(emptyList<String>(), TaskRules.upcomingDeadlines(emptyList(), NOW).map { it.id })
+    }
+    @Test fun homeSkipsCompletedExpiredAndDailyTasks() {
+        val t = listOf(
+            deadline("done", "x", at(day1, 9), status = TaskStatus.COMPLETED), deadline("past", "x", NOW.minusSeconds(60)), daily("daily", "x"), deadline("ok", "x", at(day1, 10)),
+        )
+        assertEquals(listOf("ok"), TaskRules.upcomingDeadlines(t, NOW).map { it.id })
+    }
+    @Test fun deadlinesScreenGroupsTodayAndFutureAndCountsPast() {
+        val t = listOf(deadline("today", "x", at(TODAY, 19)), deadline("tomorrow", "x", at(day1, 9)), deadline("later", "x", at(TODAY.plusDays(7), 9)), deadline("missed", "x", NOW.minusSeconds(3600)))
+        assertEquals(listOf("today"), TaskRules.todayDeadlines(t, TODAY, NOW, IST).map { it.id })
+        assertEquals(listOf("tomorrow", "later"), TaskRules.futureDeadlines(t, TODAY, NOW, IST).map { it.id })
+        assertEquals(listOf("missed"), TaskRules.overdue(t, TODAY, NOW).map { it.id })
+        assertEquals(0, TaskRules.overdue(listOf(deadline("a", "a", at(day1, 9))), TODAY, NOW).size)
+    }
+    @Test fun habitSummaryCountsOnlyThePersonsOwnRecords() {
+        val h1 = habit("h1", "Read"); val h2 = habit("h2", "Run", shared = true)
+        val l = mapOf("h1" to done(ME, TODAY, TODAY.minusDays(1), habitId = "h1"), "h2" to done(PARTNER, TODAY, habitId = "h2"))
+        val mine = HabitRules.summary(listOf(h1, h2), memberIds, ME, TODAY, l)
+        assertEquals(HabitRules.Summary(1, 2, 2), mine)
+        val partner = HabitRules.summary(listOf(h1, h2), memberIds, PARTNER, TODAY, l)
+        assertEquals(HabitRules.Summary(1, 1, 1), partner) // partner sees only the shared habit and their own completion
+    }
+    @Test fun weekIsMondayToSundayWithRealStates() {
+        val h = habit("h1", "Read")
+        val monday = TODAY.minusDays(6) // TODAY is a Sunday
+        val w = HabitRules.week(h, ME, TODAY, done(ME, monday, TODAY))
+        assertEquals(7, w.size); assertEquals(monday, w.first().day); assertEquals(TODAY, w.last().day)
+        assertEquals(DayState.DONE, w.first().state); assertEquals(DayState.MISSED, w[1].state); assertEquals(DayState.DONE, w.last().state)
+    }
+    @Test fun sharedHabitCompletionsStayIndependentInTheWeek() {
+        val h = habit("h1", "Walk", shared = true)
+        val l = done(ME, TODAY)
+        assertEquals(DayState.DONE, HabitRules.week(h, ME, TODAY, l).last().state)
+        assertEquals(DayState.PENDING, HabitRules.week(h, PARTNER, TODAY, l).last().state)
+    }
+}

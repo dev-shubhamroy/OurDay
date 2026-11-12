@@ -106,6 +106,23 @@ object HabitRules {
             .map { d -> Occurrence(d, dayState(h, user, d, today, logs), entry(logs, user, d)?.doneAt) }
             .filter { it.state != DayState.OFF }
 
+    /** Habits screen summary for one person: how many of today's habits are done, and the best (longest) streak across their habits. */
+    data class Summary(val done: Int, val total: Int, val bestStreak: Int)
+
+    fun summary(habits: List<Habit>, memberIds: List<String>, user: String, today: LocalDate, logs: Map<String, HabitLogs>): Summary {
+        val mine = habits.filter { user in participants(it, memberIds) }
+        val todays = todays(mine, memberIds, user, today)
+        val done = todays.count { dayState(it, user, today, today, logs[it.id].orEmpty()) == DayState.DONE }
+        val best = mine.maxOfOrNull { longestStreak(it, user, today, logs[it.id].orEmpty()) } ?: 0
+        return Summary(done, todays.size, best)
+    }
+
+    /** The seven days (Monday to Sunday) of the week containing [today], with each day's real state for [user]. */
+    fun week(h: Habit, user: String, today: LocalDate, logs: HabitLogs): List<Occurrence> {
+        val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        return (0..6).map { monday.plusDays(it.toLong()) }.map { d -> Occurrence(d, dayState(h, user, d, today, logs), entry(logs, user, d)?.doneAt) }
+    }
+
     fun scheduleLabel(h: Habit): String {
         val d = h.scheduleDays ?: return "Every day"
         if (d.size == 7) return "Every day"

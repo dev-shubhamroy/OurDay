@@ -30,7 +30,7 @@ import java.time.Instant
 import java.time.LocalTime
 
 @Composable
-fun TasksScreen(ui: AppUi, onOpen: (Task) -> Unit, onToggle: (Task) -> Unit, onMode: (ViewMode) -> Unit) {
+fun TasksScreen(ui: AppUi, onOpen: (Task) -> Unit, onToggle: (Task) -> Unit, onMode: (ViewMode) -> Unit, onBack: (() -> Unit)? = null) {
     var status by rememberSaveable { mutableStateOf(TaskRules.StatusFilter.OPEN) }
     var kind by rememberSaveable { mutableStateOf(TaskRules.KindFilter.ALL) }
     var sort by rememberSaveable { mutableStateOf(TaskRules.Sort.DATE) }
@@ -40,7 +40,7 @@ fun TasksScreen(ui: AppUi, onOpen: (Task) -> Unit, onToggle: (Task) -> Unit, onM
     val tasks = TaskRules.list(ui.tasks, ui.subject, status, kind, TaskRules.OwnerFilter.BOTH, sort)
 
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader(if (ui.isPartnerView) "${d.workspace?.partner?.firstName ?: "Partner"}’s tasks" else "Tasks", "Everything planned", trailing = {
+        ScreenHeader(if (ui.isPartnerView) "${d.workspace?.partner?.firstName ?: "Partner"}’s tasks" else "Tasks", "Everything planned", onBack = onBack, trailing = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Box {
                     IconButton(onClick = { menu = true }, Modifier.size(48.dp)) { Icon(Icons.Rounded.Sort, "Sort", tint = Od.muted) }

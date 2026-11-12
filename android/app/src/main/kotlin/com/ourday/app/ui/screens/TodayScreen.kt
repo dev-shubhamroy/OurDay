@@ -27,81 +27,52 @@ import com.ourday.domain.rules.HabitRules
 import com.ourday.domain.rules.TaskRules
 import com.ourday.domain.rules.ViewMode
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayScreen(
-    ui: AppUi, onOpenTask: (Task) -> Unit, onToggle: (Task) -> Unit, onHabit: (Habit) -> Unit, onToggleHabit: (Habit) -> Unit, onRana: () -> Unit, onRefresh: () -> Unit,
-    onMode: (ViewMode) -> Unit,
+    ui: AppUi, onOpenTask: (Task) -> Unit, onToggle: (Task) -> Unit, onHabit: (Habit) -> Unit, onToggleHabit: (Habit) -> Unit, onAddTask: () -> Unit, onDeadlines: () -> Unit, onHabits: () -> Unit,
+    onRefresh: () -> Unit,
 ) {
     val d = ui.data
     val ws = d.workspace
     val subject = ui.subject
     val tasks = ui.tasks
     val deadlines = TaskRules.todayDeadlines(tasks, ui.today, ui.now, ui.zone)
-    val tomorrow = TaskRules.tomorrowDeadlines(tasks, ui.today, ui.now, ui.zone)
     val daily = TaskRules.todayTasks(tasks, ui.today)
-    val upcoming = TaskRules.upcoming(tasks, ui.today, ui.now, ui.zone)
     val habits = HabitRules.todays(ui.habits, d.memberIds, subject, ui.today)
     fun owner(t: Task): Pair<String, Boolean>? = if (ui.isPartnerView || t.createdBy == d.meId) null else ws?.nameOf(t.createdBy)?.let { it to true }
-    val first = ws?.me?.firstName
-    val hour = ui.now.atZone(ui.zone).hour
-    val greeting = if (hour < 5) "Good evening" else if (hour < 12) "Good morning" else if (hour < 17) "Good afternoon" else "Good evening"
-    val title = if (ui.isPartnerView) "${ws?.partner?.firstName ?: "Partner"}’s day" else if (first != null) "$greeting, $first" else greeting
 
     PullToRefreshBox(isRefreshing = ui.status is SyncStatus.Syncing, onRefresh = onRefresh) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 112.dp)) {
-            item { ScreenHeader(title, Fmt.longDate(ui.today), trailing = { ModeBar(ui, onMode) }) }
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+            item { PageHeading(Fmt.longDate(ui.today), "Today", trailing = { AddButton("Add a task", onAddTask) }) }
             item { SyncStrip(ui) }
             if (ui.isPartnerView) item { PartnerBanner(ws?.partner?.firstName ?: "your partner") }
-            else item { RanaEntry(onRana) }
             if (ws == null) {
                 item { EmptyState(if (ui.status is SyncStatus.Syncing || ui.lastSync == 0L) "Loading your workspace…" else "No workspace yet. Create or join one in the OurDay web app, then pull to refresh.") }
                 return@LazyColumn
             }
-            item { SectionTitle(Icons.Rounded.Flag, "Deadlines") }
+            item { SectionHead(Icons.Rounded.Flag, "Deadlines", onClick = onDeadlines) }
             if (deadlines.isEmpty()) item { DashedEmpty("No active deadlines today") }
-            items(deadlines.size, key = { "d" + deadlines[it].id }) { i -> val t = deadlines[i]; DeadlineCard(t, ui.now, ui.today, ui.zone, owner(t), ui.h24, { onToggle(t) }, { onOpenTask(t) }, dayChip = "Today") }
-            if (tomorrow.isNotEmpty()) {
-                item { SectionTitle(Icons.Rounded.Event, "Tomorrow", tint = Od.electric) }
-                items(tomorrow.size, key = { "t" + tomorrow[it].id }) { i -> val t = tomorrow[i]; DeadlineCard(t, ui.now, ui.today, ui.zone, owner(t), ui.h24, { onToggle(t) }, { onOpenTask(t) }, subdued = true, dayChip = "Tomorrow") }
-            }
-            item { SectionTitle(Icons.Rounded.Checklist, "Daily tasks") }
+            items(deadlines.size, key = { "d" + deadlines[it].id }) { i -> val t = deadlines[i]; DeadlineRow(t, ui.now, ui.today, ui.zone, owner(t), ui.h24, { onToggle(t) }, { onOpenTask(t) }, edge = true) }
+
+            item { SectionHead(Icons.Rounded.Checklist, "Daily tasks", trailing = { AddAction(onAddTask) }) }
             if (daily.isEmpty()) item { DashedEmpty("Nothing planned for today") }
             items(daily.size, key = { "p" + daily[it].id }) { i -> val t = daily[i]; TaskCard(t, owner(t), ui.h24, { onToggle(t) }, { onOpenTask(t) }) }
-            item { SectionTitle(Icons.Rounded.Repeat, "Habits", tint = Od.accent2) }
+
+            item { SectionHead(Icons.Rounded.Repeat, "Habits", onClick = onHabits) }
             if (habits.isEmpty()) item { DashedEmpty("No habits scheduled today") }
             items(habits.size, key = { "h" + habits[it].id }) { i -> HabitRow(habits[i], ui, onOpen = { onHabit(habits[i]) }, onToggle = { onToggleHabit(habits[i]) }) }
-            if (upcoming.isNotEmpty()) {
-                item { SectionTitle(Icons.Rounded.ArrowForward, "Coming up", tint = Od.muted) }
-                items(upcoming.size, key = { "u" + upcoming[it].id }) { i ->
-                    val t = upcoming[i]
-                    if (t.kind == TaskKind.DEADLINE) DeadlineCard(t, ui.now, ui.today, ui.zone, owner(t), ui.h24, { onToggle(t) }, { onOpenTask(t) }, subdued = true)
-                    else TaskCard(t, owner(t), ui.h24, { onToggle(t) }, { onOpenTask(t) })
-                }
-            }
         }
     }
 }
 
-/** The Partner Mode toggle, in the header of every personal screen (Today, Tasks, Habits): one tap, no settings detour. */
+
+/** The old Partner Mode toggle, kept only for the Tasks screen header (the four main screens use the shared header switch). */
 @Composable
 fun ModeBar(ui: AppUi, onMode: (ViewMode) -> Unit) {
     val ws = ui.data.workspace ?: return
     ModeToggle(ws.me?.name ?: "Me", ws.partner?.name, ui.mode, onMode)
-}
-
-@Composable
-private fun RanaEntry(onRana: () -> Unit) {
-    OdCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), Od.accent, 0.22f, com.ourday.app.ui.theme.OdShapes.card, onClick = onRana) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            RanaMark(44.dp)
-            Column(Modifier.weight(1f)) {
-                Text("RANA briefing", style = MaterialTheme.typography.titleMedium, color = Od.fg)
-                Text("Your deadlines and today’s plan", style = MaterialTheme.typography.bodyMedium, color = Od.muted)
-            }
-            Icon(Icons.Rounded.ChevronRight, null, tint = Od.muted)
-        }
-    }
 }
 
 /** A habit for today: your own record is a check button; a partner's record is shown read-only (the web HabitRow). */
@@ -115,7 +86,7 @@ fun HabitRow(h: Habit, ui: AppUi, onOpen: () -> Unit, onToggle: () -> Unit) {
     val done = state == DayState.DONE
     val who = if (ui.isPartnerView) d.workspace?.partner?.firstName ?: "Partner" else "You"
     val other = d.workspace?.partner
-    OdCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), Od.accent2, 0.22f, com.ourday.app.ui.theme.OdShapes.tile, dim = done, onClick = onOpen) {
+    OdCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), Od.line, 0.12f, com.ourday.app.ui.theme.OdShapes.card, dim = done, onClick = onOpen) {
         Row(Modifier.fillMaxWidth().padding(start = 6.dp, end = 12.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             if (writable) CheckButton(done, onToggle, if (done) "Undo: ${h.title}" else "Mark done: ${h.title}", size = 26.dp)
             else Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { ReadOnlyCheck(done) }
@@ -139,6 +110,7 @@ fun HabitRow(h: Habit, ui: AppUi, onOpen: () -> Unit, onToggle: () -> Unit) {
                 }
             }
             if (streak > 0) Pill("$streak", Od.warn, Icons.Rounded.LocalFireDepartment, fillAlpha = 0.12f, lineAlpha = 0f)
+            Icon(Icons.Rounded.ChevronRight, null, Modifier.padding(start = 4.dp).size(24.dp), tint = Od.fg)
         }
     }
 }
@@ -158,7 +130,7 @@ fun ScopeBadge(scope: com.ourday.domain.rules.HabitScope) {
     when (scope) {
         com.ourday.domain.rules.HabitScope.SHARED -> Pill("Shared", Od.accent2, Icons.Rounded.Group)
         com.ourday.domain.rules.HabitScope.PARTNER -> Pill("Partner’s", Od.partner, Icons.Rounded.Person)
-        com.ourday.domain.rules.HabitScope.PERSONAL -> Pill("Mine", Od.accent)
+        com.ourday.domain.rules.HabitScope.PERSONAL -> Pill("Personal", Od.muted, fillAlpha = 0.14f, lineAlpha = 0.28f)
     }
 }
 

@@ -29,7 +29,7 @@ private enum class SharedFilter(val label: String) { ALL("All"), ACTIVE("Active"
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun SharedScreen(ui: AppUi, onOpen: (Task) -> Unit, onAction: (function: String, taskId: String, approve: Boolean?, message: String?, done: String?) -> Unit) {
+fun SharedScreen(ui: AppUi, onOpen: (Task) -> Unit, onAction: (function: String, taskId: String, approve: Boolean?, message: String?, done: String?) -> Unit, onBack: (() -> Unit)? = null) {
     var filter by rememberSaveable { mutableStateOf(SharedFilter.ALL) }
     var remind by remember { mutableStateOf<Task?>(null) }
     val d = ui.data
@@ -40,7 +40,7 @@ fun SharedScreen(ui: AppUi, onOpen: (Task) -> Unit, onAction: (function: String,
     val partner = d.workspace?.partner
 
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("Shared", partner?.let { "With ${it.firstName}" } ?: "Together")
+        ScreenHeader("Shared", partner?.let { "With ${it.firstName}" } ?: "Together", onBack = onBack)
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SharedFilter.entries.forEach { f -> FilterPill(f.label, filter == f, { filter = f }) }
         }
